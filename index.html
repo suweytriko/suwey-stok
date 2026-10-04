@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="tr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SUWEY Stok</title>
+<meta name="theme-color" content="#2C4A6E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SUWEY Stok">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky header + product grid; detail view swaps in per color with size tables */
+:root{
+  --bg:#F3F3F0; --surface:#FFFFFF; --sunk:#E8E8E3; --fg:#1B1D21; --muted:#5F636B; --line:#D9D9D2;
+  --accent:#2C4A6E; --accent-ink:#FFFFFF;
+  --ok:#2F7A4F; --ok-bg:#E3F1E8; --warn:#9A6A00; --warn-bg:#FBF0D4; --crit:#B4401F; --crit-bg:#FBE4DC; --out:#6B6B6B; --out-bg:#E7E7E4;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131518; --surface:#1C1F23; --sunk:#25292E; --fg:#ECEDEE; --muted:#9BA0A8; --line:#30353B;
+  --accent:#8FB3DE; --accent-ink:#0F1A27;
+  --ok:#6FCF97; --ok-bg:#1B3226; --warn:#E8B949; --warn-bg:#3A2F12; --crit:#F08A6C; --crit-bg:#3D2018; --out:#A9A9A9; --out-bg:#2A2C2F;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131518; --surface:#1C1F23; --sunk:#25292E; --fg:#ECEDEE; --muted:#9BA0A8; --line:#30353B;
+  --accent:#8FB3DE; --accent-ink:#0F1A27;
+  --ok:#6FCF97; --ok-bg:#1B3226; --warn:#E8B949; --warn-bg:#3A2F12; --crit:#F08A6C; --crit-bg:#3D2018; --out:#A9A9A9; --out-bg:#2A2C2F;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+html,body{margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+header.top{position:sticky;top:0;padding-top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:14px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:24px;letter-spacing:.02em;margin:0}
+.brand span{color:var(--muted);font-size:13px}
+.search{flex:1 1 220px;max-width:340px;position:relative}
+.search input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.meta{font-size:12.5px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:500;font-size:13.5px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--fg)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.summary{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 14px;align-items:center}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip b{font-family:var(--f-mono);font-weight:500;font-size:12px}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.totals{margin-left:auto;font-size:13px;color:var(--muted)}
+.totals strong{color:var(--fg);font-family:var(--f-mono);font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;text-align:left;padding:0;display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
+.card:hover{transform:translateY(-2px);border-color:var(--muted)}
+.ph{aspect-ratio:4/5;width:100%;max-width:100%;background:var(--sunk);position:relative;overflow:hidden;display:block}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.stripes{position:absolute;inset:0;display:flex}
+.stripes i{flex:1}
+.ph .nophoto{position:absolute;left:10px;bottom:10px;font-size:11px;background:var(--surface);color:var(--muted);padding:3px 8px;border-radius:999px}
+.card .body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.code{font-family:var(--f-mono);font-size:15px;font-weight:500;letter-spacing:.01em}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.type{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.big{font-family:var(--f-display);font-size:26px;font-weight:700;line-height:1}
+.big small{font-family:var(--f-body);font-size:12px;font-weight:500;color:var(--muted);margin-left:4px}
+.dots{display:flex;flex-wrap:wrap;gap:6px}
+.dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.dot i,.sw{width:12px;height:12px;border-radius:50%;border:1px solid var(--line);display:inline-block;flex:none}
+.pill{font-size:11px;font-weight:600;letter-spacing:.05em;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.s-YETERLİ{color:var(--ok);background:var(--ok-bg)}
+.s-DÜŞÜK{color:var(--warn);background:var(--warn-bg)}
+.s-KRİTİK{color:var(--crit);background:var(--crit-bg)}
+.s-TÜKENDİ{color:var(--out);background:var(--out-bg)}
+.empty{padding:48px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+/* detail */
+.back{margin:18px 0 10px}
+.dhead{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:24px;align-items:start;margin-bottom:28px}
+.dhead .ph{border-radius:var(--r);border:1px solid var(--line)}
+.dinfo{display:flex;flex-direction:column;gap:14px;min-width:0}
+.dinfo h2{font-family:var(--f-mono);font-weight:500;font-size:clamp(24px,4vw,34px);margin:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi span{display:block;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi b{font-family:var(--f-display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ccard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:grid;grid-template-columns:120px minmax(0,1fr)}
+.ccard .ph{aspect-ratio:auto;height:100%;min-height:170px}
+.cbody{padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.cname{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px}
+.seri{font-size:12.5px;color:var(--muted)}
+.seri b{color:var(--fg);font-family:var(--f-mono);font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px;text-align:right;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+td.k{font-weight:600;font-size:15px}
+.tbl{overflow-x:auto}
+.upl{font-size:12px;padding:5px 10px}
+.phbtn{position:absolute;right:8px;bottom:8px;white-space:nowrap}
+.ccard .nophoto{display:none}
+.note{font-size:12.5px;color:var(--muted)}
+/* update panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.panel h3{margin:0;font-family:var(--f-display);font-size:18px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13.5px;z-index:20;max-width:calc(100% - 32px)}
+@media (max-width:640px){
+  .dhead{grid-template-columns:1fr}
+  .dhead .ph{max-width:340px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .big{font-size:22px}
+  .colors{grid-template-columns:1fr}
+  .ccard{grid-template-columns:1fr}
+  .ccard .ph{min-height:0;height:auto;aspect-ratio:4/3}
+  .totals{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+</style>
+</head><body><header class="top"><div class="top-in">
+  <div class="brand"><h1>SUWEY</h1><span>Stok</span></div>
+  <div class="search"><input id="q" type="search" placeholder="Ürün kodu veya renk ara" aria-label="Ara"></div>
+  <div class="meta" id="meta">Yükleniyor…</div>
+</div></header>
+
+<main class="wrap">
+  
+  <section id="listView">
+    <div class="summary" id="filters"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+  <section id="detailView" hidden></section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const COLORS={"SİYAH":"#1E1E20","GRİ":"#9A9DA3","EKRU":"#EEE7D7","KAHVE":"#6B4A35","CAMEL":"#C29A6A","BEJ":"#D8C6A6","MAVİ":"#4D72A8","BEYAZ":"#FAFAF7","LACİVERT":"#22324F","YEŞİL":"#4F7A5A","KIRMIZI":"#A8322D","PEMBE":"#E3A6B4","BORDO":"#6E1F2B","HAKİ":"#7A7550","VİZON":"#A89480","ANTRASİT":"#3E4146","FÜME":"#5B5E63","KREM":"#F1E6CC","TABA":"#9C5B32","SARI":"#E2B93B","TURUNCU":"#D9762F","MOR":"#6A4A8A","İNDİGO":"#2E3F78"};
+const RANK={"TÜKENDİ":0,"KRİTİK":1,"DÜŞÜK":2,"YETERLİ":3};
+const S={stock:null,photos:{},filter:"all",q:"",canEdit:false,db:null,assets:null,pending:null,target:null};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>new Intl.NumberFormat("tr-TR").format(n);
+function swatch(c){if(COLORS[c])return COLORS[c];let h=0;for(const ch of c)h=(h*31+ch.charCodeAt(0))%360;return `hsl(${h} 25% 55%)`}
+const TR={"İ":"I","I":"I","ı":"i","Ş":"S","ş":"s","Ğ":"G","ğ":"g","Ü":"U","ü":"u","Ö":"O","ö":"o","Ç":"C","ç":"c"};
+function slug(s){return String(s).trim().replace(/[İIıŞşĞğÜüÖöÇç]/g,c=>TR[c]).replace(/\s+/g,"_").replace(/[^A-Za-z0-9_\-.~:@+]/g,"-")}
+const pkey=(p,c)=>slug(p)+"__"+(c?slug(c):"KAPAK");
+const purl=(p,c)=>{const d=S.photos[pkey(p,c)];return d&&d.path?d.path:null};
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200)}
+function worst(list){return list.reduce((a,b)=>RANK[b]<RANK[a]?b:a,"YETERLİ")}
+function statusOf(k){const st=S.stock;if(k<=0)return"TÜKENDİ";if(k<=st.kritik)return"KRİTİK";if(k<=st.dusuk)return"DÜŞÜK";return"YETERLİ"}
+
+function products(){
+  const m=new Map();
+  for(const r of S.stock.rows){
+    if(!m.has(r.p))m.set(r.p,{p:r.p,t:r.t,colors:new Map()});
+    const P=m.get(r.p);if(!P.colors.has(r.c))P.colors.set(r.c,[]);P.colors.get(r.c).push(r);
+  }
+  return [...m.values()].map(P=>{
+    const colors=[...P.colors.entries()].map(([c,sizes])=>{
+      sizes.sort((a,b)=>String(a.s).localeCompare(String(b.s),"tr",{numeric:true}));
+      const k=sizes.reduce((a,r)=>a+Math.max(0,r.k),0);
+      return {c,sizes,k,seri:Math.min(...sizes.map(r=>Math.max(0,r.k))),status:worst(sizes.map(r=>r.d||statusOf(r.k)))};
+    });
+    const all=colors.flatMap(x=>x.sizes);
+    return {...P,colors,k:colors.reduce((a,x)=>a+x.k,0),g:all.reduce((a,r)=>a+r.g,0),sat:all.reduce((a,r)=>a+r.sat,0),bek:all.reduce((a,r)=>a+r.bek,0),status:worst(colors.map(x=>x.status))};
+  }).sort((a,b)=>a.p.localeCompare(b.p,"tr",{numeric:true}));
+}
+
+function photoBox(p,c,colorsForStripes,label){
+  const u=c===undefined?(purl(p)||colorsForStripes.map(x=>purl(p,x)).find(Boolean)):purl(p,c);
+  if(u)return `<img src="${u}" alt="${esc(label)}" loading="lazy">`;
+  const st=(colorsForStripes||[c]).map(x=>`<i style="background:${swatch(x)}"></i>`).join("");
+  return `<div class="stripes">${st}</div><span class="nophoto">Fotoğraf yok</span>`;
+}
+function uploadBtn(p,c,txt){return S.assets?`<button class="btn upl phbtn" data-up="${esc(p)}" data-uc="${esc(c||"")}">${txt}</button>`:""}
+
+function renderMeta(){
+  const st=S.stock;if(!st){$("meta").textContent="";return}
+  const d=st.reportDate?new Date(st.reportDate+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}):"";
+  $("meta").textContent="Rapor tarihi: "+d;
+}
+
+function renderList(){
+  const grid=$("grid");
+  if(!S.stock){grid.innerHTML=`<div class="empty" style="grid-column:1/-1">Stok verileri yükleniyor…</div>`;$("filters").innerHTML="";return}
+  const ps=products();
+  const cnt={all:ps.length,low:ps.filter(x=>x.colors.some(c=>c.status==="KRİTİK"||c.status==="DÜŞÜK")).length,out:ps.filter(x=>x.colors.some(c=>c.status==="TÜKENDİ")).length};
+  const tot=ps.reduce((a,x)=>a+x.k,0);
+  const f=[["all","Tüm ürünler"],["low","Azalan stok"],["out","Tükenen renk var"]];
+  $("filters").innerHTML=f.map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${S.filter===k}">${l} <b>${cnt[k]}</b></button>`).join("")+`<div class="totals">Satılabilir toplam <strong>${fmt(tot)}</strong> adet</div>`;
+  const q=S.q.toLocaleUpperCase("tr-TR").trim();
+  const vis=ps.filter(x=>{
+    if(S.filter==="low"&&!x.colors.some(c=>c.status==="KRİTİK"||c.status==="DÜŞÜK"))return false;
+    if(S.filter==="out"&&!x.colors.some(c=>c.status==="TÜKENDİ"))return false;
+    if(q&&!(x.p.includes(q)||x.t.includes(q)||x.colors.some(c=>c.c.includes(q))))return false;
+    return true;
+  });
+  if(!vis.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1">Bu filtreye uyan ürün yok.</div>`;return}
+  grid.innerHTML=vis.map(x=>`<button class="card" data-p="${esc(x.p)}">
+    <span class="ph">${photoBox(x.p,undefined,x.colors.map(c=>c.c),x.p)}</span>
+    <span class="body">
+      <span class="row"><span class="code">${esc(x.p)}</span><span class="pill s-${x.status}">${x.status}</span></span>
+      <span class="row"><span class="big">${fmt(x.k)}<small>adet</small></span><span class="type">${esc(x.t)}</span></span>
+      <span class="dots">${x.colors.map(c=>`<span class="dot"><i style="background:${swatch(c.c)}"></i>${esc(c.c)} ${fmt(c.k)}</span>`).join("")}</span>
+    </span></button>`).join("");
+}
+
+function renderDetail(code){
+  const v=$("detailView");
+  const x=S.stock&&products().find(p=>p.p===code);
+  if(!x){v.innerHTML=`<button class="btn back" data-back>← Ürünler</button><div class="empty">${S.stock?"Bu ürün güncel stok raporunda yok.":"Yükleniyor…"}</div>`;return}
+  v.innerHTML=`<button class="btn back" data-back>← Ürünler</button>
+  <div class="dhead">
+    <div class="ph">${photoBox(x.p,undefined,x.colors.map(c=>c.c),x.p)}${uploadBtn(x.p,"",purl(x.p)?"Kapak fotoğrafını değiştir":"Kapak fotoğrafı ekle")}</div>
+    <div class="dinfo">
+      <div class="row" style="justify-content:flex-start;gap:12px;flex-wrap:wrap"><h2>${esc(x.p)}</h2><span class="pill s-${x.status}">${x.status}</span><span class="type">${esc(x.t)}</span></div>
+      <div class="kpis">
+        <div class="kpi"><span>Satılabilir</span><b>${fmt(x.k)}</b></div>
+        <div class="kpi"><span>Bekleyen sevk</span><b>${fmt(x.bek)}</b></div>
+        <div class="kpi"><span>Satılan</span><b>${fmt(x.sat)}</b></div>
+        <div class="kpi"><span>Toplam giriş</span><b>${fmt(x.g)}</b></div>
+      </div>
+      <p class="note">Satılabilir adet, satılmış ama henüz sevk edilmemiş ürünler düşülmüş hâlidir. Seri, her bedenden birer adet içeren takımdır.</p>
+    </div>
+  </div>
+  <div class="colors">${x.colors.map(c=>`<article class="ccard">
+    <div class="ph">${photoBox(x.p,c.c,[c.c],x.p+" "+c.c)}${uploadBtn(x.p,c.c,purl(x.p,c.c)?"Değiştir":"Fotoğraf ekle")}</div>
+    <div class="cbody">
+      <div class="row"><span class="cname"><span class="sw" style="background:${swatch(c.c)}"></span>${esc(c.c)}</span><span class="pill s-${c.status}">${c.status}</span></div>
+      <div class="seri">Satılabilir <b>${fmt(c.k)}</b> adet · tam seri <b>${fmt(c.seri)}</b></div>
+      <div class="tbl"><table><thead><tr><th>Beden</th><th>Kalan</th><th>Bek. sevk</th><th>Satılan</th><th>Giriş</th></tr></thead><tbody>
+      ${c.sizes.map(r=>`<tr><td>${esc(r.s)}</td><td class="k" style="color:var(--${{"YETERLİ":"fg","DÜŞÜK":"warn","KRİTİK":"crit","TÜKENDİ":"out"}[r.d||statusOf(r.k)]})">${fmt(Math.max(0,r.k))}</td><td>${fmt(r.bek)}</td><td>${fmt(r.sat)}</td><td>${fmt(r.g)}</td></tr>`).join("")}
+      </tbody></table></div>
+    </div></article>`).join("")}</div>`;
+}
+
+function route(){
+  const code=decodeURIComponent(location.hash.slice(1));
+  const detail=!!code;
+  $("listView").hidden=detail;$("detailView").hidden=!detail;
+  if(detail)renderDetail(code);else renderList();
+}
+function render(){renderMeta();route()}
+
+/* ---- interactions ---- */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-p],[data-f],[data-back],[data-up],[data-apply],[data-cancel]");if(!t)return;
+  if(t.dataset.up!==undefined){e.stopPropagation();S.target={p:t.dataset.up,c:t.dataset.uc||""};$("imgIn").value="";$("imgIn").click();return}
+  if(t.dataset.p){location.hash=t.dataset.p;scrollTo(0,0);return}
+  if(t.dataset.f){S.filter=t.dataset.f;renderList();return}
+  if(t.dataset.back!==undefined){history.length>1&&location.hash?history.back():(location.hash="");return}
+    });
+window.addEventListener("hashchange",()=>{route();scrollTo(0,0)});
+$("q").addEventListener("input",e=>{S.q=e.target.value;if(location.hash)location.hash="";else renderList()});
+
+/* ---- boot ---- */
+render();
+fetch("data.json",{cache:"no-cache"}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{S.stock=d.stock;S.photos=d.photos||{};render()})
+  .catch(()=>{$("grid").innerHTML='<div class="empty" style="grid-column:1/-1">Stok verisi yüklenemedi. Sayfayı yenileyin.</div>'});
+</script>
+<script>if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
+</body></html>
