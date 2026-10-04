@@ -9,8 +9,13 @@ Yönetim uygulaması (sahibin özel artifact'ı): https://claude.ai/artifact/7Pm
 - db `photos/<docid>`: {asset, product, color}; docid = ürün kodu + "__" + renk (veya KAPAK), Türkçe harfler ASCII'ye çevrili
 - Fotoğraf dosyaları artifact'ın asset deposunda (asset id ile)
 
+## Excel'in yeri (sahibin Mac'i)
+`/Users/abdullahsanver/Desktop/SUWEY RAPORLAMA/01 - SUWEY RAPORLAR.xlsx`
+Zamanlanmış görev hafta içi 09:00, 13:00, 18:00 (İstanbul) bu dosyadan güncelleme yapar
+(`device_stage_files` ile oturuma alınır; bilgisayar kapalı/uykudaysa o çalıştırma atlanır).
+
 ## "Satış uygulamasını güncelle" denince
-Kullanıcı Excel'i sohbete eklediyse: önce Excel'in STOK RAPORU sayfasını (yönetim uygulamasındaki "Excel'den güncelle" ile aynı kurallarla: 'ÜRÜN ADI'/'RENK' başlık satırından TOPLAM'a kadar) okuyup `ArtifactData set` ile stock/current'a yaz (önce get ile version al), sonra aşağıdaki adımlara devam et.
+Excel varsa (sohbete eklenmiş ya da yukarıdaki yoldan alınmış): `python3 tools/excel_to_stock.py <xlsx> <stock.json>` ile STOK RAPORU sayfasını oku (yönetim uygulamasındaki "Excel'den güncelle" ile aynı kurallar: 'ÜRÜN ADI'/'RENK' başlık satırından TOPLAM'a kadar, yalnızca adetler), sonra stock/current'ı `ArtifactData get` ile okuyup version'unu al ve `ArtifactData set` (file_path=<stock.json>, if_version) ile yaz. Excel'deki reportDate ve satırlar db'dekiyle aynıysa yazma/commit atlanabilir. Ardından aşağıdaki adımlara devam et.
 
 1. `ArtifactData get` stock/current, `out_dir` ile kaydet.
 2. `ArtifactData list` photos (limit 1000), `out_dir` ile kaydet.
