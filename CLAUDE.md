@@ -11,7 +11,7 @@ Yönetim uygulaması (sahibin özel artifact'ı): https://claude.ai/artifact/7Pm
 
 ## Excel'in yeri (sahibin Mac'i)
 `/Users/abdullahsanver/Desktop/SUWEY RAPORLAMA/01 - SUWEY RAPORLAR.xlsx`
-Zamanlanmış görev hafta içi 09:00, 13:00, 18:00 (İstanbul) bu dosyadan güncelleme yapar
+Zamanlanmış görevler hafta içi 09:00, 13:00, 18:00 ve hafta sonu 14:00 (İstanbul) bu dosyadan güncelleme yapar
 (`device_stage_files` ile oturuma alınır; bilgisayar kapalı/uykudaysa o çalıştırma atlanır).
 
 ## "Satış uygulamasını güncelle" denince
