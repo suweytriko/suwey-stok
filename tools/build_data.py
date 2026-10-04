@@ -9,6 +9,7 @@ Usage:
   PHOTOS_DIR_JSON  a directory of JSON files, one per db document in the
                    "photos" collection (body has asset, product, color)
   ASSET_FILES_DIR  directory holding the downloaded asset files, named <assetid>.<ext>
+                   (only needed for photos not already in photos/; may be empty)
 
 Photos are copied to photos/<docid>-<assetid[:8]>.jpg so a replaced photo gets a
 new file name (the app caches photos aggressively). Unused photo files are removed.
@@ -35,12 +36,14 @@ def main(stock_json, photos_dir, assets_dir):
         aid = b.get("asset")
         if not aid:
             continue
-        src = next(iter(glob.glob(os.path.join(assets_dir, aid + ".*"))), None)
-        if not src:
-            print("missing asset file for", doc_id, aid)
-            continue
         name = f"{doc_id}-{aid[:8]}.jpg"
-        shutil.copyfile(src, os.path.join(ROOT, "photos", name))
+        dest = os.path.join(ROOT, "photos", name)
+        if not os.path.exists(dest):  # unchanged photos are already in the repo
+            src = next(iter(glob.glob(os.path.join(assets_dir, aid + ".*"))), None)
+            if not src:
+                print("missing asset file for", doc_id, aid)
+                continue
+            shutil.copyfile(src, dest)
         photos[doc_id] = {"path": "photos/" + name}
         keep.add(name)
     for old in glob.glob(os.path.join(ROOT, "photos", "*.jpg")):

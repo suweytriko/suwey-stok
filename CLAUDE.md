@@ -10,9 +10,11 @@ Yönetim uygulaması (sahibin özel artifact'ı): https://claude.ai/artifact/7Pm
 - Fotoğraf dosyaları artifact'ın asset deposunda (asset id ile)
 
 ## "Satış uygulamasını güncelle" denince
+Kullanıcı Excel'i sohbete eklediyse: önce Excel'in STOK RAPORU sayfasını (yönetim uygulamasındaki "Excel'den güncelle" ile aynı kurallarla: 'ÜRÜN ADI'/'RENK' başlık satırından TOPLAM'a kadar) okuyup `ArtifactData set` ile stock/current'a yaz (önce get ile version al), sonra aşağıdaki adımlara devam et.
+
 1. `ArtifactData get` stock/current, `out_dir` ile kaydet.
 2. `ArtifactData list` photos (limit 1000), `out_dir` ile kaydet.
-3. Her fotoğrafın asset id'si için ayrı bir `Artifact read` (url + `path`=<asset id> + out_dir) çağrısı yap (`paths` asset id kabul etmez); çağrıları paralel gönder, hepsini tek klasöre koy.
+3. Yalnızca `photos/` içinde henüz `<docid>-<assetid ilk 8>.jpg` dosyası olmayan fotoğraflar için (genelde hiçbiri; fotoğraflar sabit) her asset id'ye ayrı bir `Artifact read` (url + `path`=<asset id> + out_dir) çağrısı yap (`paths` asset id kabul etmez); çağrıları paralel gönder, hepsini tek klasöre koy.
 4. `python3 tools/build_data.py <stock json> <photos klasörü> <asset klasörü>`
 5. Çıktıdaki satır/ürün/fotoğraf sayısını kontrol et, `git fetch origin main`, commit, `git push origin HEAD:main`.
 6. 1-2 dakika sonra https://suweytriko.github.io/suwey-stok/data.json adresinin yeni reportDate'i gösterdiğini doğrula.
