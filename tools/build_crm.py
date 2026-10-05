@@ -90,8 +90,14 @@ def from_excel(xlsx, out_sales, out_coll=None):
             if H is None:
                 if _h(r[0]) == "MÜŞTERİ" and any(_h(x).startswith("KALAN") for x in r):
                     H = [_h(x) for x in r]
-                    ix = lambda n: next(i for i, h in enumerate(H) if h.startswith(n))
-                    I = dict(satis=ix("SATIŞ TUTARI"), nakit=ix("NAKİT"), havale=ix("HAVALE"), cek=ix("ÇEK"), kk=ix("KREDİ"),
+                    def ix(*names):
+                        for n in names:
+                            for i, h in enumerate(H):
+                                if h.startswith(n):
+                                    return i
+                        raise KeyError("TAHSİLAT RAPORU column not found: " + " / ".join(names))
+                    # satis = total sales incl. VAT; newer layout splits it into FATURA + DİĞER = TOPLAM SATIŞ
+                    I = dict(satis=ix("TOPLAM SATIŞ", "SATIŞ TUTARI"), nakit=ix("NAKİT"), havale=ix("HAVALE"), cek=ix("ÇEK"), kk=ix("KREDİ"),
                              toplam=ix("TOPLAM TAHSİLAT"), son=ix("SON TAHSİLAT"), kalan=ix("KALAN"), durum=ix("TAHSİLAT DURUMU"))
                 continue
             n = str(r[0] or "").strip()
