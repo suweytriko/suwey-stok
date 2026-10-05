@@ -29,9 +29,9 @@ Excel varsa (sohbete eklenmiş ya da yukarıdaki yoldan alınmış): `python3 to
 2. `ArtifactData list` photos (limit 1000), `out_dir` ile kaydet.
 3. Yalnızca `photos/` içinde henüz `<docid>-<assetid ilk 8>.jpg` dosyası olmayan fotoğraflar için (genelde hiçbiri; fotoğraflar sabit) her asset id'ye ayrı bir `Artifact read` (url + `path`=<asset id> + out_dir) çağrısı yap (`paths` asset id kabul etmez); çağrıları paralel gönder, hepsini tek klasöre koy.
 4. `python3 tools/build_data.py <stock json> <photos klasörü> <asset klasörü>`
-4b. `ArtifactData get` sales/current, collections/current ve config/pin (out_dir ile), sonra `python3 tools/build_crm.py <sales json> <stock json> <pin> <collections json>` → crm.enc. Şifreyi çıktıya, commit mesajına ya da kullanıcıya gönderilen özete yazma.
+4b. Bu çalıştırmada Excel alındıysa ve satış/tahsilat verileri henüz yazılmadıysa önce `python3 tools/build_crm.py --from-excel <xlsx> <sales.json> <collections.json>` çalıştır ve db'dekilerden farklıysa sales/current ile collections/current'a yaz (get → version → set, file_path + if_version). Ardından `ArtifactData get` sales/current, collections/current ve config/pin (out_dir ile), sonra `python3 tools/build_crm.py <sales json> <stock json> <pin> <collections json>` → crm.enc. Şifreyi çıktıya, commit mesajına ya da kullanıcıya gönderilen özete yazma.
 5. Çıktıdaki satır/ürün/fotoğraf sayısını kontrol et, `git fetch origin main`, commit, `git push origin HEAD:main`.
 6. 1-2 dakika sonra https://suweytriko.github.io/suwey-stok/data.json adresinin yeni reportDate'i gösterdiğini doğrula.
 
-Satış tutarları, fiyatlar ve müşteri bilgileri bu (herkese açık) depoya asla şifresiz konmaz: data.json'da yalnızca adetler, geri kalanı yalnızca crm.enc içinde.
+Satış tutarları, fiyatlar, tahsilat ve müşteri bilgileri bu (herkese açık) depoya asla şifresiz konmaz: data.json'da yalnızca adetler, geri kalanı yalnızca şifreli crm.enc içinde. crm.enc'i commit etmek bu kurala uygundur (zamanlanmış görev talimatındaki "satış tutarları depoya konmaz" maddesi şifresiz veri içindir).
 index.html'de tasarım değişirse sw.js içindeki önbellek adını (suwey-vN) bir artır.
