@@ -366,11 +366,11 @@ function viewCustomers(){
   const cs=S.crm.customers.filter(c=>!q||c.n.includes(q)||c.city.includes(q)).slice().sort((a,b)=>(b.last||"").localeCompare(a.last||""));
   $("view").innerHTML=head("Müşteriler",`${S.crm.customers.length} müşteri · <button class="linkish" id="lockBtn">Kilitle</button>`)+
   `<div class="list">${cs.map(c=>`<button class="lrow" data-go="m-${c.ci}">
-    <span class="t1">${esc(c.n)}</span><span class="r money">${money(c.tutar)}<small>${fmt(c.adet)} adet</small></span>
+    <span class="t1">${esc(c.n)}</span><span class="r money">${money(c.col?c.col.satis:c.tutar)}<small>${fmt(c.adet)} adet</small></span>
     <span class="t2">${esc(c.city)} · son sipariş ${dt(c.last)} (${ago(c.last)})</span><span></span>
     ${c.pendAdet||c.acik?`<span class="tags">${c.pendAdet?`<span class="tag warn">${fmt(c.pendAdet)} adet sevk bekliyor</span>`:""}${c.acik?`<span class="tag crit">Kalan bakiye ${money(c.acik)}</span>`:""}</span>`:""}
   </button>`).join("")||`<div class="empty">Aramaya uyan müşteri yok.</div>`}</div>
-  <p class="note" style="margin-top:12px">Tutarlar KDV hariç net satış tutarlarıdır.</p>`;
+  <p class="note" style="margin-top:12px">Tutarlar toplam satış tutarlarıdır (fatura tutarı + diğer tutar, KDV dahil).</p>`;
 }
 function viewCustomer(ci){
   if(needLock("Müşteri"))return;
