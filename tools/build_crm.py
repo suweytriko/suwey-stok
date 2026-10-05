@@ -25,7 +25,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ITER = 600_000
 COLS = ["city", "cust", "p", "c", "s", "adet", "liste", "isk", "net", "tutar",
-        "teslim", "satisT", "sevkT", "fatura", "odeme"]
+        "teslim", "satisT", "sevkT", "fatura", "odeme", "diger"]
 
 
 def body(path):
@@ -67,7 +67,8 @@ def from_excel(xlsx, out_sales, out_coll=None):
                 hdr = dict(city=0, cust=1, p=f("ÜRÜN ADI", d=2), c=f("RENK", d=3), s=f("BEDEN", d=4), adet=f("ADET", d=5),
                            liste=f("FİYAT", d=6), isk=f("İSKONTO", d=7), net=f("SATIŞ FİYATI", d=8), tutar=f("TOPLAM TUTAR", d=9),
                            teslim=f("TESLİM", d=10), satisT=f("SATIŞ TARİHİ", d=11), sevkT=f("SEVK TARİHİ", d=12),
-                           fatura=f("FATURA TUTARI", d=15), odeme=f("TAHSİLAT DURUMU", "ÖDEME DURUMU", d=17))
+                           fatura=f("FATURA TUTARI", d=15), odeme=f("TAHSİLAT DURUMU", "ÖDEME DURUMU", d=17),
+                           diger=f("DİĞER TUTAR"))
             continue
         g = lambda k: r[hdr[k]] if hdr[k] is not None and hdr[k] < len(r) else None
         if not g("cust") or not g("p"):
@@ -75,7 +76,8 @@ def from_excel(xlsx, out_sales, out_coll=None):
         rows.append([str(g("city") or "").strip(), str(g("cust")).strip(), str(g("p")).strip(), str(g("c") or "").strip(),
                      str(g("s") or "").strip(), num(g("adet")), num(g("liste")), num(g("isk")), num(g("net")), num(g("tutar")),
                      str(g("teslim") or "").strip(), _ymd(g("satisT")), _ymd(g("sevkT")),
-                     (None if g("fatura") in (None, "") else num(g("fatura"))), (str(g("odeme")).strip() if g("odeme") else None)])
+                     (None if g("fatura") in (None, "") else num(g("fatura"))), (str(g("odeme")).strip() if g("odeme") else None),
+                     num(g("diger"))])
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     json.dump({"cols": COLS, "rows": rows, "source": os.path.basename(xlsx), "updatedAt": now},
               open(out_sales, "w", encoding="utf-8"), ensure_ascii=False)
@@ -126,7 +128,7 @@ def from_excel(xlsx, out_sales, out_coll=None):
 
 def build(sales, stock, coll=None):
     ix = {c: i for i, c in enumerate(sales["cols"])}
-    R = [dict((c, r[ix[c]]) for c in COLS) for r in sales["rows"]]
+    R = [dict((c, r[ix[c]] if c in ix else None) for c in COLS) for r in sales["rows"]]  # older data has no "diger"
     # price list: most common non-zero list price per product; ties -> most recent
     by_p = collections.defaultdict(list)
     for r in R:
@@ -148,7 +150,7 @@ def build(sales, stock, coll=None):
         cu = custs.setdefault(r["cust"], {"n": r["cust"], "city": r["city"], "orders": {}})
         o = cu["orders"].setdefault(r["satisT"] or "", {"d": r["satisT"], "lines": []})
         o["lines"].append([r["p"], r["c"], r["s"], r["adet"], r["liste"], r["isk"], r["net"], r["tutar"],
-                           r["teslim"], r["sevkT"], r["fatura"], r["odeme"]])
+                           r["teslim"], r["sevkT"], r["fatura"], r["odeme"], r["diger"] or 0])
     out = []
     for cu in custs.values():
         cu["orders"] = sorted(cu["orders"].values(), key=lambda o: o["d"] or "", reverse=True)
@@ -156,7 +158,7 @@ def build(sales, stock, coll=None):
     out.sort(key=lambda c: c["n"])
     return {"v": 1, "updatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "reportDate": stock.get("reportDate"), "prices": prices, "customers": out,
-            "lineCols": ["p", "c", "s", "adet", "liste", "isk", "net", "tutar", "teslim", "sevkT", "fatura", "odeme"],
+            "lineCols": ["p", "c", "s", "adet", "liste", "isk", "net", "tutar", "teslim", "sevkT", "fatura", "odeme", "diger"],
             "collections": ({"customers": coll.get("customers", []), "payments": coll.get("payments", [])} if coll else None)}
 
 

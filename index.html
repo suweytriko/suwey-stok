@@ -263,17 +263,17 @@ function derive(raw){
   const who={};
   const customers=raw.customers.map((cu,ci)=>{
     const orders=cu.orders.map((o,oi)=>{
-      const ls_=o.lines.map(l=>({p:l[L.p],c:l[L.c],s:l[L.s],adet:l[L.adet],liste:l[L.liste],isk:l[L.isk],net:l[L.net],tutar:l[L.tutar],teslim:l[L.teslim],sevkT:l[L.sevkT],fatura:l[L.fatura],odeme:l[L.odeme]}));
+      const ls_=o.lines.map(l=>({p:l[L.p],c:l[L.c],s:l[L.s],adet:l[L.adet],liste:l[L.liste],isk:l[L.isk],net:l[L.net],tutar:l[L.tutar],teslim:l[L.teslim],sevkT:l[L.sevkT],fatura:l[L.fatura],odeme:l[L.odeme],diger:L.diger!=null?l[L.diger]:0}));
       const sum=f=>ls_.reduce((a,l)=>a+(f(l)||0),0);
       const pend=ls_.filter(l=>l.teslim!=="TESLİM EDİLDİ");
       const st=pend.length===0?"Teslim edildi":pend.length===ls_.length?"Sevk bekliyor":"Kısmi sevk";
       for(const l of ls_){const k=l.p+"|"+l.c;(who[k]=who[k]||{});const w=who[k][ci]=who[k][ci]||{ci,adet:0,last:""};w.adet+=l.adet;if((o.d||"")>w.last)w.last=o.d||""}
       return {oi,d:o.d,lines:ls_,adet:sum(l=>l.adet),tutar:sum(l=>l.tutar),brut:sum(l=>l.liste*l.adet),pendAdet:pend.reduce((a,l)=>a+l.adet,0),pendLines:pend,status:st,
-        sevkT:ls_.map(l=>l.sevkT).filter(Boolean).sort().pop()||null,fatura:sum(l=>l.fatura),
+        sevkT:ls_.map(l=>l.sevkT).filter(Boolean).sort().pop()||null,fatura:sum(l=>l.fatura),diger:sum(l=>l.diger),toplam:sum(l=>(l.fatura||0)+(l.diger||0)),
         tahsil:sum(l=>l.odeme==="TAHSİL EDİLDİ"?l.fatura:0),acik:sum(l=>l.odeme==="BEKLİYOR"?l.fatura:0)};
     });
     const s=f=>orders.reduce((a,o)=>a+f(o),0);
-    return {ci,n:cu.n,city:cu.city,orders,adet:s(o=>o.adet),tutar:s(o=>o.tutar),fatura:s(o=>o.fatura),tahsil:s(o=>o.tahsil),acik:s(o=>o.acik),pendAdet:s(o=>o.pendAdet),last:orders[0]?orders[0].d:null,payments:[],col:null};
+    return {ci,n:cu.n,city:cu.city,orders,adet:s(o=>o.adet),tutar:s(o=>o.tutar),fatura:s(o=>o.fatura),toplam:s(o=>o.toplam),tahsil:s(o=>o.tahsil),acik:s(o=>o.acik),pendAdet:s(o=>o.pendAdet),last:orders[0]?orders[0].d:null,payments:[],col:null};
   });
   const C=raw.collections;
   if(C){const by={};for(const c of customers)by[c.n]=c;
@@ -366,7 +366,7 @@ function viewCustomers(){
   const cs=S.crm.customers.filter(c=>!q||c.n.includes(q)||c.city.includes(q)).slice().sort((a,b)=>(b.last||"").localeCompare(a.last||""));
   $("view").innerHTML=head("Müşteriler",`${S.crm.customers.length} müşteri · <button class="linkish" id="lockBtn">Kilitle</button>`)+
   `<div class="list">${cs.map(c=>`<button class="lrow" data-go="m-${c.ci}">
-    <span class="t1">${esc(c.n)}</span><span class="r money">${money(c.col?c.col.satis:c.tutar)}<small>${fmt(c.adet)} adet</small></span>
+    <span class="t1">${esc(c.n)}</span><span class="r money">${money(c.col?c.col.satis:c.toplam)}<small>${fmt(c.adet)} adet</small></span>
     <span class="t2">${esc(c.city)} · son sipariş ${dt(c.last)} (${ago(c.last)})</span><span></span>
     ${c.pendAdet||c.acik?`<span class="tags">${c.pendAdet?`<span class="tag warn">${fmt(c.pendAdet)} adet sevk bekliyor</span>`:""}${c.acik?`<span class="tag crit">Kalan bakiye ${money(c.acik)}</span>`:""}</span>`:""}
   </button>`).join("")||`<div class="empty">Aramaya uyan müşteri yok.</div>`}</div>
@@ -378,15 +378,15 @@ function viewCustomer(ci){
   const prod={};for(const o of c.orders)for(const l of o.lines){const k=l.p+"|"+l.c;(prod[k]=prod[k]||{p:l.p,c:l.c,adet:0}).adet+=l.adet}
   $("view").innerHTML=`<button class="btn back" data-back>← Geri</button>`+head(esc(c.n),esc(c.city))+
   `<div class="kpis">
-    <div class="kpi"><span>Toplam alım</span><b class="money">${money(c.tutar)}</b></div>
+    <div class="kpi"><span>Toplam alım (KDV dahil)</span><b class="money">${money(c.col?c.col.satis:c.toplam)}</b></div>
     <div class="kpi"><span>Adet · seri</span><b>${fmt(c.adet)} · ${fmt(Math.floor(c.adet/2))}</b></div>
     <div class="kpi"><span>Bekleyen sevk</span><b>${fmt(c.pendAdet)}</b></div>
     <div class="kpi"><span>Kalan bakiye</span><b class="money" style="${c.acik?"color:var(--crit)":""}">${money(c.acik)}</b></div>
   </div>
-  <h3 class="sec">Siparişler</h3>
+  <h3 class="sec">Siparişler <small style="font-weight:400;color:var(--muted)">toplam tutar, KDV dahil</small></h3>
   <div class="list">${c.orders.map(o=>`<div class="lrow" style="cursor:default">
-    <span class="t1">${dt(o.d)}</span><span class="r money">${money(o.tutar)}<small>${fmt(o.adet)} adet</small></span>
-    <span class="t2">${o.status}${o.sevkT?" · sevk "+dt(o.sevkT):""}${o.fatura?` · fatura ${money(o.fatura)}`:""}</span><span></span>
+    <span class="t1">${dt(o.d)}</span><span class="r money">${money(o.toplam)}<small>${fmt(o.adet)} adet</small></span>
+    <span class="t2">${o.status}${o.sevkT?" · sevk "+dt(o.sevkT):""}${o.diger?` · fatura ${money(o.fatura)} + diğer ${money(o.diger)}`:""}</span><span></span>
     <span class="tags"><button class="btn upl" data-go="pf-${c.ci}-${o.oi}">Proformayı aç</button></span>
   </div>`).join("")}</div>
   ${c.col?`<h3 class="sec">Tahsilat</h3>
