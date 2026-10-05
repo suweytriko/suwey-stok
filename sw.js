@@ -1,4 +1,4 @@
-const C="suwey-v2";
+const C="suwey-v3";
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(["./","index.html","manifest.webmanifest","icon-192.png","apple-touch-icon.png"])));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 // Stok verisi ve sayfa: önce internetten dene, yoksa son kaydedileni göster. Fotoğraflar: önbellekten.

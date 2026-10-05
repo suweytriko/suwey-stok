@@ -2,8 +2,12 @@
 """Build the encrypted CRM file (crm.enc) for the SUWEY sales app.
 
 Usage:
-  python3 tools/build_crm.py SALES_JSON STOCK_JSON PIN
-  python3 tools/build_crm.py --from-excel XLSX OUT_SALES_JSON   # extract raw sales rows
+  python3 tools/build_crm.py SALES_JSON STOCK_JSON PIN [COLLECTIONS_JSON]
+  python3 tools/build_crm.py --from-excel XLSX OUT_SALES_JSON [OUT_COLLECTIONS_JSON]
+
+  COLLECTIONS_JSON  the admin artifact's db document collections/current: TAHSİLAT RAPORU
+                    (per customer: satis, nakit, havale, cek, kk, toplam, son, kalan, durum)
+                    and TAHSİLAT KAYITLARI (payments: d, n, tutar, tur, not)
 
   SALES_JSON  the admin artifact's db document sales/current (bare body or {"data": ...});
               body: {"cols": [...], "rows": [[...], ...], "source", "updatedAt"}
@@ -36,28 +40,85 @@ def num(v):
         return 0.0
 
 
-def from_excel(xlsx, out):
-    import openpyxl
+def _h(v):
+    return " ".join(str(v or "").split()).upper()
+
+
+def _ymd(v):
+    return v.strftime("%Y-%m-%d") if isinstance(v, (datetime.date, datetime.datetime)) else (str(v) if v else None)
+
+
+def _sheet(wb, prefix):
+    return next((wb[n] for n in wb.sheetnames if _h(n).startswith(prefix)), None)
+
+
+def from_excel(xlsx, out_sales, out_coll=None):
+    """Extract SATIŞ SUWEY rows (and TAHSİLAT RAPORU / KAYITLARI when out_coll is given)."""
+    import openpyxl, warnings
+    warnings.filterwarnings("ignore")
     wb = openpyxl.load_workbook(xlsx, data_only=True, read_only=True)
-    ws = next(wb[n] for n in wb.sheetnames if n.strip().startswith("SATIŞ"))
-    rows, started = [], False
+    ws = _sheet(wb, "SATIŞ")
+    rows, hdr = [], None
     for r in ws.iter_rows(values_only=True):
-        if not started:
-            started = str(r[0] or "").strip() == "ŞEHİR" and str(r[1] or "").strip() == "MÜŞTERİ"
+        if hdr is None:
+            if _h(r[0]) == "ŞEHİR" and _h(r[1]) == "MÜŞTERİ":
+                H = [_h(x) for x in r]
+                f = lambda *names, d=None: next((i for i, h in enumerate(H) for n in names if h.startswith(n)), d)
+                hdr = dict(city=0, cust=1, p=f("ÜRÜN ADI", d=2), c=f("RENK", d=3), s=f("BEDEN", d=4), adet=f("ADET", d=5),
+                           liste=f("FİYAT", d=6), isk=f("İSKONTO", d=7), net=f("SATIŞ FİYATI", d=8), tutar=f("TOPLAM TUTAR", d=9),
+                           teslim=f("TESLİM", d=10), satisT=f("SATIŞ TARİHİ", d=11), sevkT=f("SEVK TARİHİ", d=12),
+                           fatura=f("FATURA TUTARI", d=15), odeme=f("TAHSİLAT DURUMU", "ÖDEME DURUMU", d=17))
             continue
-        if not r[1] or not r[2]:
+        g = lambda k: r[hdr[k]] if hdr[k] is not None and hdr[k] < len(r) else None
+        if not g("cust") or not g("p"):
             continue
-        d = lambda v: v.strftime("%Y-%m-%d") if isinstance(v, (datetime.date, datetime.datetime)) else (str(v) if v else None)
-        rows.append([str(r[0] or "").strip(), str(r[1]).strip(), str(r[2]).strip(), str(r[3] or "").strip(), str(r[4] or "").strip(),
-                     num(r[5]), num(r[6]), num(r[7]), num(r[8]), num(r[9]), str(r[10] or "").strip(), d(r[11]), d(r[12]),
-                     (None if r[15] is None else num(r[15])), (str(r[17]).strip() if r[17] else None)])
-    json.dump({"cols": COLS, "rows": rows, "source": os.path.basename(xlsx),
-               "updatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat()},
-              open(out, "w", encoding="utf-8"), ensure_ascii=False)
+        rows.append([str(g("city") or "").strip(), str(g("cust")).strip(), str(g("p")).strip(), str(g("c") or "").strip(),
+                     str(g("s") or "").strip(), num(g("adet")), num(g("liste")), num(g("isk")), num(g("net")), num(g("tutar")),
+                     str(g("teslim") or "").strip(), _ymd(g("satisT")), _ymd(g("sevkT")),
+                     (None if g("fatura") in (None, "") else num(g("fatura"))), (str(g("odeme")).strip() if g("odeme") else None)])
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    json.dump({"cols": COLS, "rows": rows, "source": os.path.basename(xlsx), "updatedAt": now},
+              open(out_sales, "w", encoding="utf-8"), ensure_ascii=False)
     print("sales rows", len(rows))
+    if not out_coll:
+        return
+    coll = {"customers": [], "payments": [], "source": os.path.basename(xlsx), "updatedAt": now}
+    ws = _sheet(wb, "TAHSİLAT RAPOR")
+    if ws is not None:
+        H = None
+        for r in ws.iter_rows(values_only=True):
+            if H is None:
+                if _h(r[0]) == "MÜŞTERİ" and any(_h(x).startswith("KALAN") for x in r):
+                    H = [_h(x) for x in r]
+                    ix = lambda n: next(i for i, h in enumerate(H) if h.startswith(n))
+                    I = dict(satis=ix("SATIŞ TUTARI"), nakit=ix("NAKİT"), havale=ix("HAVALE"), cek=ix("ÇEK"), kk=ix("KREDİ"),
+                             toplam=ix("TOPLAM TAHSİLAT"), son=ix("SON TAHSİLAT"), kalan=ix("KALAN"), durum=ix("TAHSİLAT DURUMU"))
+                continue
+            n = str(r[0] or "").strip()
+            if not n or _h(n) == "TOPLAM" or n.startswith("Not"):
+                if _h(n) == "TOPLAM":
+                    break
+                continue
+            coll["customers"].append({"n": n, "satis": num(r[I["satis"]]), "nakit": num(r[I["nakit"]]), "havale": num(r[I["havale"]]),
+                                      "cek": num(r[I["cek"]]), "kk": num(r[I["kk"]]), "toplam": num(r[I["toplam"]]),
+                                      "son": _ymd(r[I["son"]]), "kalan": round(num(r[I["kalan"]]), 2),
+                                      "durum": (str(r[I["durum"]]).strip() if r[I["durum"]] else None)})
+    ws = _sheet(wb, "TAHSİLAT KAYIT")
+    if ws is not None:
+        started = False
+        for r in ws.iter_rows(values_only=True):
+            if not started:
+                started = _h(r[0]) == "TARİH" and _h(r[1]) == "MÜŞTERİ"
+                continue
+            if not r[1] or r[2] in (None, ""):
+                continue
+            coll["payments"].append({"d": _ymd(r[0]), "n": str(r[1]).strip(), "tutar": num(r[2]),
+                                     "tur": str(r[3] or "").strip(), "not": str(r[4] or "").strip()})
+    json.dump(coll, open(out_coll, "w", encoding="utf-8"), ensure_ascii=False)
+    print("collection customers", len(coll["customers"]), "payments", len(coll["payments"]))
 
 
-def build(sales, stock):
+def build(sales, stock, coll=None):
     ix = {c: i for i, c in enumerate(sales["cols"])}
     R = [dict((c, r[ix[c]]) for c in COLS) for r in sales["rows"]]
     # price list: most common non-zero list price per product; ties -> most recent
@@ -89,7 +150,8 @@ def build(sales, stock):
     out.sort(key=lambda c: c["n"])
     return {"v": 1, "updatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "reportDate": stock.get("reportDate"), "prices": prices, "customers": out,
-            "lineCols": ["p", "c", "s", "adet", "liste", "isk", "net", "tutar", "teslim", "sevkT", "fatura", "odeme"]}
+            "lineCols": ["p", "c", "s", "adet", "liste", "isk", "net", "tutar", "teslim", "sevkT", "fatura", "odeme"],
+            "collections": ({"customers": coll.get("customers", []), "payments": coll.get("payments", [])} if coll else None)}
 
 
 def encrypt(obj, pin):
@@ -102,11 +164,12 @@ def encrypt(obj, pin):
 
 if __name__ == "__main__":
     if sys.argv[1] == "--from-excel":
-        from_excel(sys.argv[2], sys.argv[3])
+        from_excel(sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None)
         sys.exit()
     sales, stock, pin = body(sys.argv[1]), body(sys.argv[2]), sys.argv[3]
+    coll = body(sys.argv[4]) if len(sys.argv) > 4 else None
     assert sales.get("rows"), "sales has no rows"
-    crm = build(sales, stock)
+    crm = build(sales, stock, coll)
     json.dump(encrypt(crm, pin), open(os.path.join(ROOT, "crm.enc"), "w"))
     n_orders = sum(len(c["orders"]) for c in crm["customers"])
     print(f"customers={len(crm['customers'])} orders={n_orders} lines={len(sales['rows'])} prices={sum(1 for p in crm['prices'] if p['price'])}/{len(crm['prices'])}")

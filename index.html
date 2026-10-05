@@ -273,8 +273,13 @@ function derive(raw){
         tahsil:sum(l=>l.odeme==="TAHSİL EDİLDİ"?l.fatura:0),acik:sum(l=>l.odeme==="BEKLİYOR"?l.fatura:0)};
     });
     const s=f=>orders.reduce((a,o)=>a+f(o),0);
-    return {ci,n:cu.n,city:cu.city,orders,adet:s(o=>o.adet),tutar:s(o=>o.tutar),fatura:s(o=>o.fatura),tahsil:s(o=>o.tahsil),acik:s(o=>o.acik),pendAdet:s(o=>o.pendAdet),last:orders[0]?orders[0].d:null};
+    return {ci,n:cu.n,city:cu.city,orders,adet:s(o=>o.adet),tutar:s(o=>o.tutar),fatura:s(o=>o.fatura),tahsil:s(o=>o.tahsil),acik:s(o=>o.acik),pendAdet:s(o=>o.pendAdet),last:orders[0]?orders[0].d:null,payments:[],col:null};
   });
+  const C=raw.collections;
+  if(C){const by={};for(const c of customers)by[c.n]=c;
+    for(const r of C.customers){const c=by[r.n];if(c){c.col=r;c.acik=r.kalan;c.tahsil=r.toplam}}
+    for(const p of C.payments){const c=by[p.n];if(c)c.payments.push(p)}
+    for(const c of customers)c.payments.sort((a,b)=>(b.d||"").localeCompare(a.d||""));}
   return {...raw,customers,who};
 }
 
@@ -363,7 +368,7 @@ function viewCustomers(){
   `<div class="list">${cs.map(c=>`<button class="lrow" data-go="m-${c.ci}">
     <span class="t1">${esc(c.n)}</span><span class="r money">${money(c.tutar)}<small>${fmt(c.adet)} adet</small></span>
     <span class="t2">${esc(c.city)} · son sipariş ${dt(c.last)} (${ago(c.last)})</span><span></span>
-    ${c.pendAdet||c.acik?`<span class="tags">${c.pendAdet?`<span class="tag warn">${fmt(c.pendAdet)} adet sevk bekliyor</span>`:""}${c.acik?`<span class="tag crit">Açık bakiye ${money(c.acik)}</span>`:""}</span>`:""}
+    ${c.pendAdet||c.acik?`<span class="tags">${c.pendAdet?`<span class="tag warn">${fmt(c.pendAdet)} adet sevk bekliyor</span>`:""}${c.acik?`<span class="tag crit">Kalan bakiye ${money(c.acik)}</span>`:""}</span>`:""}
   </button>`).join("")||`<div class="empty">Aramaya uyan müşteri yok.</div>`}</div>
   <p class="note" style="margin-top:12px">Tutarlar KDV hariç net satış tutarlarıdır.</p>`;
 }
@@ -376,14 +381,18 @@ function viewCustomer(ci){
     <div class="kpi"><span>Toplam alım</span><b class="money">${money(c.tutar)}</b></div>
     <div class="kpi"><span>Adet · seri</span><b>${fmt(c.adet)} · ${fmt(Math.floor(c.adet/2))}</b></div>
     <div class="kpi"><span>Bekleyen sevk</span><b>${fmt(c.pendAdet)}</b></div>
-    <div class="kpi"><span>Açık bakiye</span><b class="money" style="${c.acik?"color:var(--crit)":""}">${money(c.acik)}</b></div>
+    <div class="kpi"><span>Kalan bakiye</span><b class="money" style="${c.acik?"color:var(--crit)":""}">${money(c.acik)}</b></div>
   </div>
   <h3 class="sec">Siparişler</h3>
   <div class="list">${c.orders.map(o=>`<div class="lrow" style="cursor:default">
     <span class="t1">${dt(o.d)}</span><span class="r money">${money(o.tutar)}<small>${fmt(o.adet)} adet</small></span>
-    <span class="t2">${o.status}${o.sevkT?" · sevk "+dt(o.sevkT):""}${o.fatura?` · fatura ${money(o.fatura)}${o.acik?`, açık ${money(o.acik)}`:", tahsil edildi"}`:""}</span><span></span>
+    <span class="t2">${o.status}${o.sevkT?" · sevk "+dt(o.sevkT):""}${o.fatura?` · fatura ${money(o.fatura)}`:""}</span><span></span>
     <span class="tags"><button class="btn upl" data-go="pf-${c.ci}-${o.oi}">Proformayı aç</button></span>
   </div>`).join("")}</div>
+  ${c.col?`<h3 class="sec">Tahsilat</h3>
+  <div class="lrow" style="cursor:default"><span class="t1">Satış tutarı (KDV dahil)</span><span class="r money">${money(c.col.satis)}</span>
+    <span class="t2">Tahsil edilen ${money(c.col.toplam)}${c.col.son?" · son tahsilat "+dt(c.col.son):""}</span><span class="r money" style="${c.col.kalan>0?"color:var(--crit)":"color:var(--ok)"}">${c.col.kalan>0?"Kalan "+money(c.col.kalan):"Kapandı"}</span></div>
+  ${c.payments.length?`<div class="list" style="margin-top:8px">${c.payments.map(p=>`<div class="lrow" style="cursor:default"><span class="t1">${dt(p.d)} · ${esc(p.tur)}</span><span class="r money" style="color:var(--ok)">${money(p.tutar)}</span>${p.not?`<span class="t2">${esc(p.not)}</span><span></span>`:""}</div>`).join("")}</div>`:`<p class="note">Henüz tahsilat kaydı yok.</p>`}`:""}
   <h3 class="sec">Aldığı ürünler</h3>
   <div class="list">${Object.values(prod).sort((a,b)=>b.adet-a.adet).map(x=>`<button class="lrow mini" data-go="u-${esc(x.p)}">${thumb(x.p,x.c)}<span><span class="t1" style="display:block">${esc(x.p)}</span><span class="t2"><span class="sw" style="background:${swatch(x.c)};width:10px;height:10px"></span> ${esc(x.c)}</span></span><span class="r">${fmt(x.adet)} adet</span></button>`).join("")}</div>`;
 }
@@ -444,17 +453,25 @@ function viewSevk(){
 /* ---------- TAHSİLAT ---------- */
 function viewTahsilat(){
   if(needLock("Tahsilat"))return;
-  const cs=S.crm.customers;
-  const F=cs.reduce((a,c)=>a+c.fatura,0),T=cs.reduce((a,c)=>a+c.tahsil,0),A=cs.reduce((a,c)=>a+c.acik,0);
+  const C=S.crm.collections;
+  if(!C){$("view").innerHTML=head("Tahsilat","")+`<div class="empty">Tahsilat raporu henüz yüklenmedi.</div>`;return}
+  const R=C.customers,sum=f=>R.reduce((a,r)=>a+(r[f]||0),0);
   const q=S.q.toLocaleUpperCase("tr-TR").trim();
-  const open=cs.filter(c=>c.acik>0&&(!q||c.n.includes(q)||c.city.includes(q))).sort((a,b)=>b.acik-a.acik);
-  $("view").innerHTML=head("Tahsilat","KDV dahil fatura tutarları")+
-  `<div class="kpis"><div class="kpi"><span>Faturalanan</span><b class="money">${money(F)}</b></div><div class="kpi"><span>Tahsil edilen</span><b class="money" style="color:var(--ok)">${money(T)}</b></div><div class="kpi"><span>Bekleyen</span><b class="money" style="color:var(--crit)">${money(A)}</b></div></div>
-  <h3 class="sec">Ödemesi bekleyen müşteriler</h3>
-  <div class="list">${open.map(c=>{const old=c.orders.filter(o=>o.acik>0).map(o=>o.sevkT||o.d).filter(Boolean).sort()[0];const n=daysAgo(old);
-    return `<button class="lrow" data-go="m-${c.ci}"><span class="t1">${esc(c.n)}</span><span class="r money" style="color:var(--crit)">${money(c.acik)}<small>${esc(c.city)}</small></span>
-    <span class="t2">${old?`En eski açık fatura ${dt(old)} (${n} gün)`:""}${c.tahsil?` · tahsil edilen ${money(c.tahsil)}`:""}</span><span></span></button>`}).join("")||`<div class="empty">Ödemesi bekleyen fatura yok.</div>`}</div>
-  <p class="note" style="margin-top:12px">Henüz faturası kesilmemiş siparişler bu listede yer almaz.</p>`;
+  const byName={};for(const c of S.crm.customers)byName[c.n]=c;
+  const open=R.filter(r=>r.kalan>0.005&&(!q||r.n.includes(q)||((byName[r.n]||{}).city||"").includes(q))).sort((a,b)=>b.kalan-a.kalan);
+  const pill=d=>d==="TAHSİL EDİLDİ"?"ok":d==="KISMİ TAHSİLAT"?"warn":"crit";
+  const pays=C.payments.slice().sort((a,b)=>(b.d||"").localeCompare(a.d||"")).slice(0,15);
+  const types=[["Nakit","nakit"],["Havale","havale"],["Çek","cek"],["Kredi kartı","kk"]].filter(([_,k])=>sum(k)>0);
+  $("view").innerHTML=head("Tahsilat","KDV dahil")+
+  `<div class="kpis"><div class="kpi"><span>Satış tutarı</span><b class="money">${money(sum("satis"))}</b></div><div class="kpi"><span>Tahsil edilen</span><b class="money" style="color:var(--ok)">${money(sum("toplam"))}</b></div><div class="kpi"><span>Kalan bakiye</span><b class="money" style="color:var(--crit)">${money(sum("kalan"))}</b></div></div>
+  ${types.length?`<p class="note" style="margin-top:8px">${types.map(([l,k])=>l+" "+money(sum(k))).join(" · ")}</p>`:""}
+  <h3 class="sec">Bakiyesi olan müşteriler</h3>
+  <div class="list">${open.map(r=>{const c=byName[r.n];const go=c?`data-go="m-${c.ci}"`:"";
+    return `<button class="lrow" ${go}><span class="t1">${esc(r.n)}</span><span class="r money" style="color:var(--crit)">${money(r.kalan)}<small>${c?esc(c.city):""}</small></span>
+    <span class="t2">Satış ${money(r.satis)}${r.toplam?` · tahsil edilen ${money(r.toplam)}`:""}${r.son?` · son tahsilat ${dt(r.son)}`:""}</span><span></span>
+    <span class="tags"><span class="tag ${pill(r.durum)}">${esc(r.durum||"")}</span></span></button>`}).join("")||`<div class="empty">Bakiyesi olan müşteri yok.</div>`}</div>
+  ${pays.length?`<h3 class="sec">Son tahsilatlar</h3><div class="list">${pays.map(p=>{const c=byName[p.n];return `<button class="lrow" ${c?`data-go="m-${c.ci}"`:""}><span class="t1">${esc(p.n)}</span><span class="r money" style="color:var(--ok)">${money(p.tutar)}<small>${esc(p.tur)}</small></span><span class="t2">${dt(p.d)}${p.not?" · "+esc(p.not):""}</span><span></span></button>`}).join("")}</div>`:""}
+  <p class="note" style="margin-top:12px">Rakamlar Excel'deki TAHSİLAT RAPORU ve TAHSİLAT KAYITLARI sayfalarından gelir.</p>`;
 }
 
 /* ---------- FİYATLAR ---------- */
