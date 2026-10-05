@@ -125,21 +125,71 @@ td.k{font-weight:600;font-size:15px}
   .totals{margin-left:0;width:100%}
 }
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+/* ---- CRM additions ---- */
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tab{background:none;border:0;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:500;color:var(--muted);cursor:pointer}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-current="page"]{color:var(--accent)}
+.vhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:20px 0 12px}
+.vhead h2{font-family:var(--f-display);font-size:24px;margin:0;text-wrap:balance}
+.vhead .meta{margin-left:auto}
+.list{display:flex;flex-direction:column;gap:8px}
+.lrow{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;text-align:left;width:100%;cursor:pointer}
+button.lrow:hover{border-color:var(--muted)}
+.lrow .t1{font-weight:600;font-size:15.5px;min-width:0}
+.lrow .t2{font-size:12.5px;color:var(--muted);min-width:0}
+.lrow .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.lrow .r small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1;margin-top:4px}
+.tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}.tag.crit{background:var(--crit-bg);color:var(--crit)}.tag.ok{background:var(--ok-bg);color:var(--ok)}
+.money{font-variant-numeric:tabular-nums;white-space:nowrap}
+.sec{margin:26px 0 10px;font-family:var(--f-display);font-size:18px}
+.lock{max-width:340px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.lock h2{font-family:var(--f-display);margin:0;font-size:22px}
+.pin{font-family:var(--f-mono);font-size:30px;letter-spacing:.5em;text-align:center;width:200px;padding:10px 0 10px .5em;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.err{color:var(--crit);font-size:13.5px;min-height:1.2em}
+.mini{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center}
+.thumb{width:44px;height:55px;border-radius:6px;overflow:hidden;background:var(--sunk);position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.who{display:flex;flex-direction:column;gap:2px;font-size:13.5px}
+.who a,.linkish{color:var(--accent);text-decoration:none;cursor:pointer;background:none;border:0;padding:0;font:inherit;text-align:left}
+.who .wl{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.who .wl:last-child{border-bottom:0}
+.pf{background:#fff;color:#1B1D21;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-top:6px}
+.pf h3{font-family:var(--f-display);margin:0 0 2px;font-size:20px}
+.pf .meta2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 16px;font-size:13px;margin:14px 0}
+.pf .meta2 span{display:block;color:#5F636B;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.pf table td,.pf table th{border-color:#D9D9D2;color:#1B1D21}
+.pf th{color:#5F636B}
+.pft td{vertical-align:top;line-height:1.35}.pft .sub{font-size:11.5px;color:#5F636B;white-space:normal}
+.pft td:first-child{min-width:96px}
+.pf .tot{margin-left:auto;max-width:320px;font-size:14px;margin-top:12px}
+.pf .tot div{display:flex;justify-content:space-between;padding:3px 0}
+.pf .tot .g{font-weight:700;border-top:1px solid #1B1D21;margin-top:4px;padding-top:6px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+@media print{
+  header.top,.tabbar,.actions,.back,.noprint{display:none!important}
+  body{background:#fff;padding:0}.pf{border:0;padding:0}
+}
 </style>
 </head><body><header class="top"><div class="top-in">
-  <div class="brand"><h1>SUWEY</h1><span>Stok</span></div>
-  <div class="search"><input id="q" type="search" placeholder="Ürün kodu veya renk ara" aria-label="Ara"></div>
+  <div class="brand"><h1>SUWEY</h1><span id="brandSub">Stok</span></div>
+  <div class="search" id="searchBox"><input id="q" type="search" placeholder="Ürün kodu veya renk ara" aria-label="Ara"></div>
   <div class="meta" id="meta">Yükleniyor…</div>
 </div></header>
 
-<main class="wrap">
-  
-  <section id="listView">
-    <div class="summary" id="filters"></div>
-    <div class="grid" id="grid"></div>
-  </section>
-  <section id="detailView" hidden></section>
-</main>
+<main class="wrap" id="view"></main>
+
+<nav class="tabbar" aria-label="Bölümler"><div class="tabbar-in">
+  <button class="tab" data-tab="stok"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>Stok</button>
+  <button class="tab" data-tab="musteri"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14.8c2 .7 3.2 2.4 3.6 5.2"/></svg>Müşteriler</button>
+  <button class="tab" data-tab="sevk"><svg viewBox="0 0 24 24"><path d="M2 6h12v10H2z"/><path d="M14 9h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Sevk</button>
+  <button class="tab" data-tab="tahsilat"><svg viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg>Tahsilat</button>
+  <button class="tab" data-tab="fiyat"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>Fiyatlar</button>
+</div></nav>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -183,89 +233,281 @@ function photoBox(p,c,colorsForStripes,label){
 }
 function uploadBtn(p,c,txt){return S.assets?`<button class="btn upl phbtn" data-up="${esc(p)}" data-uc="${esc(c||"")}">${txt}</button>`:""}
 
-function renderMeta(){
-  const st=S.stock;if(!st){$("meta").textContent="";return}
-  const d=st.reportDate?new Date(st.reportDate+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}):"";
-  $("meta").textContent="Rapor tarihi: "+d;
+/* ---------- state ---------- */
+S.crm=null;S.enc=null;S.tab="stok";
+const money=(n,d=0)=>new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",minimumFractionDigits:d,maximumFractionDigits:d}).format(n||0);
+const dt=s=>s?new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"short",year:"numeric"}):"—";
+const today=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())};
+const daysAgo=s=>s?Math.round((today()-new Date(s+"T00:00:00"))/864e5):null;
+const ago=s=>{const n=daysAgo(s);return n==null?"":n<=0?"bugün":n===1?"dün":n+" gün önce"};
+const ascii=s=>String(s).replace(/[İIıŞşĞğÜüÖöÇç]/g,c=>TR[c]).toUpperCase().replace(/[^A-Z]/g,"");
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){return null}}
+
+/* ---------- crypto ---------- */
+async function decrypt(enc,pin){
+  const b=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b(enc.salt),iterations:enc.iter,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b(enc.iv)},key,b(enc.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+async function unlock(pin,silent){
+  if(!S.enc)return false;
+  try{S.crm=derive(await decrypt(S.enc,pin));ls("suwey-pin",pin);return true}
+  catch(_){if(silent)ls("suwey-pin",null);return false}
 }
 
-function renderList(){
-  const grid=$("grid");
-  if(!S.stock){grid.innerHTML=`<div class="empty" style="grid-column:1/-1">Stok verileri yükleniyor…</div>`;$("filters").innerHTML="";return}
+/* ---------- derived CRM model ---------- */
+function derive(raw){
+  const L=raw.lineCols.reduce((o,c,i)=>(o[c]=i,o),{});
+  const who={};
+  const customers=raw.customers.map((cu,ci)=>{
+    const orders=cu.orders.map((o,oi)=>{
+      const ls_=o.lines.map(l=>({p:l[L.p],c:l[L.c],s:l[L.s],adet:l[L.adet],liste:l[L.liste],isk:l[L.isk],net:l[L.net],tutar:l[L.tutar],teslim:l[L.teslim],sevkT:l[L.sevkT],fatura:l[L.fatura],odeme:l[L.odeme]}));
+      const sum=f=>ls_.reduce((a,l)=>a+(f(l)||0),0);
+      const pend=ls_.filter(l=>l.teslim!=="TESLİM EDİLDİ");
+      const st=pend.length===0?"Teslim edildi":pend.length===ls_.length?"Sevk bekliyor":"Kısmi sevk";
+      for(const l of ls_){const k=l.p+"|"+l.c;(who[k]=who[k]||{});const w=who[k][ci]=who[k][ci]||{ci,adet:0,last:""};w.adet+=l.adet;if((o.d||"")>w.last)w.last=o.d||""}
+      return {oi,d:o.d,lines:ls_,adet:sum(l=>l.adet),tutar:sum(l=>l.tutar),brut:sum(l=>l.liste*l.adet),pendAdet:pend.reduce((a,l)=>a+l.adet,0),pendLines:pend,status:st,
+        sevkT:ls_.map(l=>l.sevkT).filter(Boolean).sort().pop()||null,fatura:sum(l=>l.fatura),
+        tahsil:sum(l=>l.odeme==="TAHSİL EDİLDİ"?l.fatura:0),acik:sum(l=>l.odeme==="BEKLİYOR"?l.fatura:0)};
+    });
+    const s=f=>orders.reduce((a,o)=>a+f(o),0);
+    return {ci,n:cu.n,city:cu.city,orders,adet:s(o=>o.adet),tutar:s(o=>o.tutar),fatura:s(o=>o.fatura),tahsil:s(o=>o.tahsil),acik:s(o=>o.acik),pendAdet:s(o=>o.pendAdet),last:orders[0]?orders[0].d:null};
+  });
+  return {...raw,customers,who};
+}
+
+/* ---------- shared pieces ---------- */
+function thumb(p,c){const u=c?purl(p,c)||purl(p):purl(p)||((S.stock&&S.stock.rows.filter(r=>r.p===p).map(r=>purl(p,r.c)).find(Boolean)));
+  return `<span class="thumb">${u?`<img src="${u}" alt="" loading="lazy">`:`<span class="stripes"><i style="background:${swatch(c||"")}"></i></span>`}</span>`}
+function lockView(title){
+  return `<div class="lock"><h2>${esc(title)}</h2><p class="note">Müşteri, sevk, tahsilat ve fiyat bilgileri şifreyle korunuyor. 4 haneli şifreyi girin.</p>
+  <form id="pinForm"><input class="pin" id="pinIn" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="one-time-code" aria-label="Şifre" ${S.enc?"":"disabled"}></form>
+  <div class="err" id="pinErr">${S.enc?"":"Veriler yükleniyor…"}</div>
+  <button class="btn primary" id="pinBtn" ${S.enc?"":"disabled"}>Aç</button></div>`;
+}
+function needLock(title){if(S.crm)return false;$("view").innerHTML=lockView(title);const i=$("pinIn");if(i&&S.enc)setTimeout(()=>i.focus(),50);return true}
+async function submitPin(){
+  const v=$("pinIn").value.trim();if(!v)return;$("pinBtn").disabled=true;$("pinErr").textContent="Açılıyor…";
+  if(await unlock(v)){route()}else{$("pinErr").textContent="Şifre yanlış. Tekrar deneyin.";$("pinBtn").disabled=false;$("pinIn").select()}
+}
+function head(title,meta){return `<div class="vhead"><h2>${title}</h2>${meta?`<span class="meta">${meta}</span>`:""}</div>`}
+
+/* ---------- STOK ---------- */
+function viewStock(){
+  const v=$("view");
+  if(!S.stock){v.innerHTML=`<div class="empty" style="margin-top:20px">Stok verileri yükleniyor…</div>`;return}
   const ps=products();
   const cnt={all:ps.length,low:ps.filter(x=>x.colors.some(c=>c.status==="KRİTİK"||c.status==="DÜŞÜK")).length,out:ps.filter(x=>x.colors.some(c=>c.status==="TÜKENDİ")).length};
   const tot=ps.reduce((a,x)=>a+x.k,0);
   const f=[["all","Tüm ürünler"],["low","Azalan stok"],["out","Tükenen renk var"]];
-  $("filters").innerHTML=f.map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${S.filter===k}">${l} <b>${cnt[k]}</b></button>`).join("")+`<div class="totals">Satılabilir toplam <strong>${fmt(tot)}</strong> adet</div>`;
   const q=S.q.toLocaleUpperCase("tr-TR").trim();
   const vis=ps.filter(x=>{
     if(S.filter==="low"&&!x.colors.some(c=>c.status==="KRİTİK"||c.status==="DÜŞÜK"))return false;
     if(S.filter==="out"&&!x.colors.some(c=>c.status==="TÜKENDİ"))return false;
     if(q&&!(x.p.includes(q)||x.t.includes(q)||x.colors.some(c=>c.c.includes(q))))return false;
-    return true;
-  });
-  if(!vis.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1">Bu filtreye uyan ürün yok.</div>`;return}
-  grid.innerHTML=vis.map(x=>`<button class="card" data-p="${esc(x.p)}">
+    return true;});
+  v.innerHTML=`<div class="summary">${f.map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${S.filter===k}">${l} <b>${cnt[k]}</b></button>`).join("")}<div class="totals">Satılabilir toplam <strong>${fmt(tot)}</strong> adet</div></div>
+  <div class="grid">${vis.length?vis.map(x=>`<button class="card" data-go="u-${esc(x.p)}">
     <span class="ph">${photoBox(x.p,undefined,x.colors.map(c=>c.c),x.p)}</span>
     <span class="body">
       <span class="row"><span class="code">${esc(x.p)}</span><span class="pill s-${x.status}">${x.status}</span></span>
       <span class="row"><span class="big">${fmt(x.k)}<small>adet</small></span><span class="type">${esc(x.t)}</span></span>
       <span class="dots">${x.colors.map(c=>`<span class="dot"><i style="background:${swatch(c.c)}"></i>${esc(c.c)} ${fmt(c.k)}</span>`).join("")}</span>
-    </span></button>`).join("");
+    </span></button>`).join(""):`<div class="empty" style="grid-column:1/-1">Bu filtreye uyan ürün yok.</div>`}</div>`;
 }
-
-function renderDetail(code){
-  const v=$("detailView");
+function whoBlock(p,c){
+  if(!S.crm)return `<div class="note"><button class="linkish" data-go="musteri">Bu rengi alan müşterileri görmek için şifreyi girin</button></div>`;
+  const w=Object.values(S.crm.who[p+"|"+c]||{}).sort((a,b)=>b.last.localeCompare(a.last));
+  if(!w.length)return `<div class="note">Bu rengi henüz alan müşteri yok.</div>`;
+  return `<div class="who"><b style="font-size:12px;letter-spacing:.05em;color:var(--muted)">BU RENGİ ALANLAR</b>${w.map(x=>{const cu=S.crm.customers[x.ci];return `<div class="wl"><button class="linkish" data-go="m-${cu.ci}">${esc(cu.n)}</button><span class="money">${fmt(x.adet)} adet · ${dt(x.last)}</span></div>`}).join("")}</div>`;
+}
+function viewProduct(code){
+  const v=$("view");
   const x=S.stock&&products().find(p=>p.p===code);
-  if(!x){v.innerHTML=`<button class="btn back" data-back>← Ürünler</button><div class="empty">${S.stock?"Bu ürün güncel stok raporunda yok.":"Yükleniyor…"}</div>`;return}
-  v.innerHTML=`<button class="btn back" data-back>← Ürünler</button>
+  if(!x){v.innerHTML=`<button class="btn back" data-back>← Geri</button><div class="empty">${S.stock?"Bu ürün güncel stok raporunda yok.":"Yükleniyor…"}</div>`;return}
+  const price=S.crm&&(S.crm.prices.find(p=>p.p===code)||{}).price;
+  v.innerHTML=`<button class="btn back" data-back>← Geri</button>
   <div class="dhead">
-    <div class="ph">${photoBox(x.p,undefined,x.colors.map(c=>c.c),x.p)}${uploadBtn(x.p,"",purl(x.p)?"Kapak fotoğrafını değiştir":"Kapak fotoğrafı ekle")}</div>
+    <div class="ph">${photoBox(x.p,undefined,x.colors.map(c=>c.c),x.p)}</div>
     <div class="dinfo">
       <div class="row" style="justify-content:flex-start;gap:12px;flex-wrap:wrap"><h2>${esc(x.p)}</h2><span class="pill s-${x.status}">${x.status}</span><span class="type">${esc(x.t)}</span></div>
       <div class="kpis">
         <div class="kpi"><span>Satılabilir</span><b>${fmt(x.k)}</b></div>
         <div class="kpi"><span>Bekleyen sevk</span><b>${fmt(x.bek)}</b></div>
         <div class="kpi"><span>Satılan</span><b>${fmt(x.sat)}</b></div>
-        <div class="kpi"><span>Toplam giriş</span><b>${fmt(x.g)}</b></div>
+        ${price?`<div class="kpi"><span>Liste fiyatı</span><b class="money">${money(price)}</b></div>`:`<div class="kpi"><span>Toplam giriş</span><b>${fmt(x.g)}</b></div>`}
       </div>
-      <p class="note">Satılabilir adet, satılmış ama henüz sevk edilmemiş ürünler düşülmüş hâlidir. Seri, her bedenden birer adet içeren takımdır.</p>
+      <p class="note">Satılabilir adet, satılmış ama henüz sevk edilmemiş ürünler düşülmüş hâlidir. Seri, her bedenden birer adet içeren takımdır.${price?" Fiyat KDV hariçtir.":""}</p>
     </div>
   </div>
   <div class="colors">${x.colors.map(c=>`<article class="ccard">
-    <div class="ph">${photoBox(x.p,c.c,[c.c],x.p+" "+c.c)}${uploadBtn(x.p,c.c,purl(x.p,c.c)?"Değiştir":"Fotoğraf ekle")}</div>
+    <div class="ph">${photoBox(x.p,c.c,[c.c],x.p+" "+c.c)}</div>
     <div class="cbody">
       <div class="row"><span class="cname"><span class="sw" style="background:${swatch(c.c)}"></span>${esc(c.c)}</span><span class="pill s-${c.status}">${c.status}</span></div>
       <div class="seri">Satılabilir <b>${fmt(c.k)}</b> adet · tam seri <b>${fmt(c.seri)}</b></div>
       <div class="tbl"><table><thead><tr><th>Beden</th><th>Kalan</th><th>Bek. sevk</th><th>Satılan</th><th>Giriş</th></tr></thead><tbody>
       ${c.sizes.map(r=>`<tr><td>${esc(r.s)}</td><td class="k" style="color:var(--${{"YETERLİ":"fg","DÜŞÜK":"warn","KRİTİK":"crit","TÜKENDİ":"out"}[r.d||statusOf(r.k)]})">${fmt(Math.max(0,r.k))}</td><td>${fmt(r.bek)}</td><td>${fmt(r.sat)}</td><td>${fmt(r.g)}</td></tr>`).join("")}
       </tbody></table></div>
+      ${whoBlock(x.p,c.c)}
     </div></article>`).join("")}</div>`;
 }
 
+/* ---------- MÜŞTERİLER ---------- */
+function viewCustomers(){
+  if(needLock("Müşteriler"))return;
+  const q=S.q.toLocaleUpperCase("tr-TR").trim();
+  const cs=S.crm.customers.filter(c=>!q||c.n.includes(q)||c.city.includes(q)).slice().sort((a,b)=>(b.last||"").localeCompare(a.last||""));
+  $("view").innerHTML=head("Müşteriler",`${S.crm.customers.length} müşteri · <button class="linkish" id="lockBtn">Kilitle</button>`)+
+  `<div class="list">${cs.map(c=>`<button class="lrow" data-go="m-${c.ci}">
+    <span class="t1">${esc(c.n)}</span><span class="r money">${money(c.tutar)}<small>${fmt(c.adet)} adet</small></span>
+    <span class="t2">${esc(c.city)} · son sipariş ${dt(c.last)} (${ago(c.last)})</span><span></span>
+    ${c.pendAdet||c.acik?`<span class="tags">${c.pendAdet?`<span class="tag warn">${fmt(c.pendAdet)} adet sevk bekliyor</span>`:""}${c.acik?`<span class="tag crit">Açık bakiye ${money(c.acik)}</span>`:""}</span>`:""}
+  </button>`).join("")||`<div class="empty">Aramaya uyan müşteri yok.</div>`}</div>
+  <p class="note" style="margin-top:12px">Tutarlar KDV hariç net satış tutarlarıdır.</p>`;
+}
+function viewCustomer(ci){
+  if(needLock("Müşteri"))return;
+  const c=S.crm.customers[ci];if(!c){location.hash="musteri";return}
+  const prod={};for(const o of c.orders)for(const l of o.lines){const k=l.p+"|"+l.c;(prod[k]=prod[k]||{p:l.p,c:l.c,adet:0}).adet+=l.adet}
+  $("view").innerHTML=`<button class="btn back" data-back>← Geri</button>`+head(esc(c.n),esc(c.city))+
+  `<div class="kpis">
+    <div class="kpi"><span>Toplam alım</span><b class="money">${money(c.tutar)}</b></div>
+    <div class="kpi"><span>Adet · seri</span><b>${fmt(c.adet)} · ${fmt(Math.floor(c.adet/2))}</b></div>
+    <div class="kpi"><span>Bekleyen sevk</span><b>${fmt(c.pendAdet)}</b></div>
+    <div class="kpi"><span>Açık bakiye</span><b class="money" style="${c.acik?"color:var(--crit)":""}">${money(c.acik)}</b></div>
+  </div>
+  <h3 class="sec">Siparişler</h3>
+  <div class="list">${c.orders.map(o=>`<div class="lrow" style="cursor:default">
+    <span class="t1">${dt(o.d)}</span><span class="r money">${money(o.tutar)}<small>${fmt(o.adet)} adet</small></span>
+    <span class="t2">${o.status}${o.sevkT?" · sevk "+dt(o.sevkT):""}${o.fatura?` · fatura ${money(o.fatura)}${o.acik?`, açık ${money(o.acik)}`:", tahsil edildi"}`:""}</span><span></span>
+    <span class="tags"><button class="btn upl" data-go="pf-${c.ci}-${o.oi}">Proformayı aç</button></span>
+  </div>`).join("")}</div>
+  <h3 class="sec">Aldığı ürünler</h3>
+  <div class="list">${Object.values(prod).sort((a,b)=>b.adet-a.adet).map(x=>`<button class="lrow mini" data-go="u-${esc(x.p)}">${thumb(x.p,x.c)}<span><span class="t1" style="display:block">${esc(x.p)}</span><span class="t2"><span class="sw" style="background:${swatch(x.c)};width:10px;height:10px"></span> ${esc(x.c)}</span></span><span class="r">${fmt(x.adet)} adet</span></button>`).join("")}</div>`;
+}
+function viewProforma(ci,oi){
+  if(needLock("Proforma"))return;
+  const c=S.crm.customers[ci],o=c&&c.orders[oi];if(!o){location.hash="musteri";return}
+  const no=`PF-${ascii(c.n).slice(0,3)}-${(o.d||"").split("-").reverse().join("")}`;
+  const net=o.tutar,isk=o.brut-net,kdv=net*0.10;
+  const gm={};for(const l of o.lines){const k=l.p+"|"+l.c+"|"+l.net+"|"+l.liste;const g=gm[k]=gm[k]||{p:l.p,c:l.c,net:l.net,liste:l.liste,isk:l.isk,adet:0,tutar:0,sz:{}};g.adet+=l.adet;g.tutar+=l.tutar;g.sz[l.s]=(g.sz[l.s]||0)+l.adet}
+  const groups=Object.values(gm).map(g=>({...g,sizes:Object.entries(g.sz).sort((a,b)=>a[0].localeCompare(b[0],"tr",{numeric:true}))})).sort((a,b)=>(a.p+a.c).localeCompare(b.p+b.c,"tr",{numeric:true}));
+  $("view").innerHTML=`<button class="btn back" data-back>← Geri</button>
+  <div class="actions"><button class="btn" id="pfPrint">Yazdır / PDF kaydet</button><button class="btn" id="pfShare">Paylaş</button></div>
+  <div class="pf" id="pfDoc">
+    <h3>SUWEY · Satış Proforması</h3><div style="font-size:13px;color:#5F636B">${esc(no)}</div>
+    <div class="meta2">
+      <div><span>Müşteri</span>${esc(c.n)}</div><div><span>Şehir</span>${esc(c.city)}</div>
+      <div><span>Sipariş tarihi</span>${dt(o.d)}</div><div><span>Düzenleme tarihi</span>${dt(new Date().toISOString().slice(0,10))}</div>
+      <div><span>Geçerlilik</span>7 gün</div><div><span>Toplam</span>${fmt(o.adet)} adet · ${fmt(Math.floor(o.adet/2))} seri</div>
+    </div>
+    <div class="tbl"><table class="pft"><thead><tr><th>Ürün</th><th>Adet</th><th>Birim fiyat</th><th>Tutar</th></tr></thead><tbody>
+    ${groups.map(g=>`<tr><td><span style="font-family:var(--f-mono);font-size:12.5px">${esc(g.p)}</span><br><span style="font-size:12.5px">${esc(g.c)}</span></td>
+      <td>${fmt(g.adet)}<br><span class="sub">${g.sizes.map(([s,a])=>"B"+esc(s)+": "+fmt(a)).join(" · ")}</span></td>
+      <td class="money">${money(g.net,2)}${g.isk?`<br><span class="sub">liste ${money(g.liste,2)} · %${fmt(Math.round(g.isk*1000)/10)} isk.</span>`:""}</td>
+      <td class="money">${money(g.tutar,2)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="tot">
+      <div><span>Brüt tutar</span><span class="money">${money(o.brut,2)}</span></div>
+      ${isk>0.005?`<div><span>İskonto</span><span class="money">−${money(isk,2)}</span></div>`:""}
+      <div><span>Net tutar (KDV hariç)</span><span class="money">${money(net,2)}</span></div>
+      <div><span>KDV (%10)</span><span class="money">${money(kdv,2)}</span></div>
+      <div class="g"><span>Genel toplam</span><span class="money">${money(net+kdv,2)}</span></div>
+    </div>
+  </div>`;
+  $("pfPrint").onclick=()=>window.print();
+  $("pfShare").onclick=async()=>{
+    const txt=`SUWEY proforma ${no}\n${c.n} (${c.city}) · ${dt(o.d)}\n${fmt(o.adet)} adet\nNet: ${money(net,2)} + KDV %10 = ${money(net+kdv,2)}`;
+    try{if(navigator.share){await navigator.share({title:"SUWEY "+no,text:txt});return}}catch(_){return}
+    try{await navigator.clipboard.writeText(txt);toast("Proforma özeti kopyalandı")}catch(_){toast("Paylaşım bu cihazda desteklenmiyor")}
+  };
+}
+
+/* ---------- SEVK ---------- */
+function viewSevk(){
+  if(needLock("Bekleyen sevkler"))return;
+  const q=S.q.toLocaleUpperCase("tr-TR").trim();
+  const items=[];for(const c of S.crm.customers)for(const o of c.orders)if(o.pendAdet&&(!q||c.n.includes(q)||c.city.includes(q)||o.pendLines.some(l=>l.p.includes(q))))items.push({c,o});
+  items.sort((a,b)=>(a.o.d||"").localeCompare(b.o.d||""));
+  const tot=items.reduce((a,x)=>a+x.o.pendAdet,0);
+  $("view").innerHTML=head("Bekleyen sevkler",`${fmt(tot)} adet · ${items.length} sipariş`)+
+  `<div class="list">${items.map(({c,o})=>{const n=daysAgo(o.d);const g={};for(const l of o.pendLines){const k=l.p+" "+l.c;g[k]=(g[k]||0)+l.adet}
+    return `<button class="lrow" data-go="m-${c.ci}">
+    <span class="t1">${esc(c.n)}</span><span class="r">${fmt(o.pendAdet)} adet<small>${esc(c.city)}</small></span>
+    <span class="t2">Sipariş ${dt(o.d)} · ${o.status}</span><span></span>
+    <span class="tags"><span class="tag ${n>21?"crit":n>10?"warn":""}">${n} gündür bekliyor</span>${Object.entries(g).map(([k,a])=>`<span class="tag">${esc(k)} · ${fmt(a)}</span>`).join("")}</span>
+  </button>`}).join("")||`<div class="empty">Bekleyen sevk yok.</div>`}</div>`;
+}
+
+/* ---------- TAHSİLAT ---------- */
+function viewTahsilat(){
+  if(needLock("Tahsilat"))return;
+  const cs=S.crm.customers;
+  const F=cs.reduce((a,c)=>a+c.fatura,0),T=cs.reduce((a,c)=>a+c.tahsil,0),A=cs.reduce((a,c)=>a+c.acik,0);
+  const q=S.q.toLocaleUpperCase("tr-TR").trim();
+  const open=cs.filter(c=>c.acik>0&&(!q||c.n.includes(q)||c.city.includes(q))).sort((a,b)=>b.acik-a.acik);
+  $("view").innerHTML=head("Tahsilat","KDV dahil fatura tutarları")+
+  `<div class="kpis"><div class="kpi"><span>Faturalanan</span><b class="money">${money(F)}</b></div><div class="kpi"><span>Tahsil edilen</span><b class="money" style="color:var(--ok)">${money(T)}</b></div><div class="kpi"><span>Bekleyen</span><b class="money" style="color:var(--crit)">${money(A)}</b></div></div>
+  <h3 class="sec">Ödemesi bekleyen müşteriler</h3>
+  <div class="list">${open.map(c=>{const old=c.orders.filter(o=>o.acik>0).map(o=>o.sevkT||o.d).filter(Boolean).sort()[0];const n=daysAgo(old);
+    return `<button class="lrow" data-go="m-${c.ci}"><span class="t1">${esc(c.n)}</span><span class="r money" style="color:var(--crit)">${money(c.acik)}<small>${esc(c.city)}</small></span>
+    <span class="t2">${old?`En eski açık fatura ${dt(old)} (${n} gün)`:""}${c.tahsil?` · tahsil edilen ${money(c.tahsil)}`:""}</span><span></span></button>`}).join("")||`<div class="empty">Ödemesi bekleyen fatura yok.</div>`}</div>
+  <p class="note" style="margin-top:12px">Henüz faturası kesilmemiş siparişler bu listede yer almaz.</p>`;
+}
+
+/* ---------- FİYATLAR ---------- */
+function viewFiyat(){
+  if(needLock("Fiyat listesi"))return;
+  const q=S.q.toLocaleUpperCase("tr-TR").trim();
+  const ps=S.crm.prices.filter(p=>!q||p.p.includes(q)||(p.t||"").includes(q));
+  $("view").innerHTML=head("Fiyat listesi","KDV hariç")+
+  `<div class="list">${ps.map(p=>`<button class="lrow mini" data-go="u-${esc(p.p)}">${thumb(p.p)}<span><span class="t1" style="display:block;font-family:var(--f-mono);font-weight:500">${esc(p.p)}</span><span class="t2">${esc(p.t||"")}</span></span>
+    <span class="r money">${p.price?money(p.price):"—"}${p.price?`<small>KDV dahil ${money(p.price*1.1)}</small>`:""}</span></button>`).join("")}</div>`;
+}
+
+/* ---------- routing ---------- */
+const PH={stok:"Ürün kodu veya renk ara",musteri:"Müşteri veya şehir ara",sevk:"Müşteri, şehir veya ürün ara",tahsilat:"Müşteri veya şehir ara",fiyat:"Ürün kodu ara"};
 function route(){
-  const code=decodeURIComponent(location.hash.slice(1));
-  const detail=!!code;
-  $("listView").hidden=detail;$("detailView").hidden=!detail;
-  if(detail)renderDetail(code);else renderList();
+  const h=decodeURIComponent(location.hash.slice(1));
+  let tab="stok";
+  if(h.startsWith("u-")){tab="stok";viewProduct(h.slice(2))}
+  else if(h.startsWith("m-")){tab="musteri";viewCustomer(+h.slice(2))}
+  else if(h.startsWith("pf-")){tab="musteri";const[a,b]=h.slice(3).split("-");viewProforma(+a,+b)}
+  else if(h==="musteri"){tab="musteri";viewCustomers()}
+  else if(h==="sevk"){tab="sevk";viewSevk()}
+  else if(h==="tahsilat"){tab="tahsilat";viewTahsilat()}
+  else if(h==="fiyat"){tab="fiyat";viewFiyat()}
+  else viewStock();
+  if(tab!==S.tab){S.tab=tab;S.q="";$("q").value=""}
+  $("q").placeholder=PH[tab];
+  $("searchBox").hidden=/^(u|m|pf)-/.test(h);
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab?"page":"false"));
+  const pf=$("pinForm");if(pf)pf.onsubmit=e=>{e.preventDefault();submitPin()};const pb=$("pinBtn");if(pb)pb.onclick=submitPin;
+  const lb=$("lockBtn");if(lb)lb.onclick=()=>{S.crm=null;ls("suwey-pin",null);route()};
+}
+function renderMeta(){
+  const st=S.stock;if(!st){$("meta").textContent="";return}
+  $("meta").textContent="Rapor tarihi: "+(st.reportDate?new Date(st.reportDate+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}):"");
 }
 function render(){renderMeta();route()}
 
-/* ---- interactions ---- */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-p],[data-f],[data-back],[data-up],[data-apply],[data-cancel]");if(!t)return;
-  if(t.dataset.up!==undefined){e.stopPropagation();S.target={p:t.dataset.up,c:t.dataset.uc||""};$("imgIn").value="";$("imgIn").click();return}
-  if(t.dataset.p){location.hash=t.dataset.p;scrollTo(0,0);return}
-  if(t.dataset.f){S.filter=t.dataset.f;renderList();return}
-  if(t.dataset.back!==undefined){history.length>1&&location.hash?history.back():(location.hash="");return}
-    });
+  const t=e.target.closest("[data-go],[data-f],[data-back],[data-tab]");if(!t)return;
+  if(t.dataset.tab){location.hash=t.dataset.tab==="stok"?"":t.dataset.tab;if(t.dataset.tab==="stok")route();scrollTo(0,0);return}
+  if(t.dataset.go){location.hash=t.dataset.go;return}
+  if(t.dataset.f){S.filter=t.dataset.f;viewStock();return}
+  if(t.dataset.back!==undefined){history.length>1?history.back():(location.hash="");return}
+});
 window.addEventListener("hashchange",()=>{route();scrollTo(0,0)});
-$("q").addEventListener("input",e=>{S.q=e.target.value;if(location.hash)location.hash="";else renderList()});
+let qT;$("q").addEventListener("input",e=>{S.q=e.target.value;clearTimeout(qT);qT=setTimeout(route,120)});
 
-/* ---- boot ---- */
+/* ---------- boot ---------- */
 render();
 fetch("data.json",{cache:"no-cache"}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{S.stock=d.stock;S.photos=d.photos||{};render()})
-  .catch(()=>{$("grid").innerHTML='<div class="empty" style="grid-column:1/-1">Stok verisi yüklenemedi. Sayfayı yenileyin.</div>'});
+  .catch(()=>{if(!S.stock)$("view").innerHTML='<div class="empty" style="margin-top:20px">Stok verisi yüklenemedi. İnternet bağlantınızı kontrol edip sayfayı yenileyin.</div>'});
+fetch("crm.enc",{cache:"no-cache"}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(async enc=>{S.enc=enc;const p=ls("suwey-pin");if(p)await unlock(p,true);route()}).catch(()=>{});
 </script>
 <script>if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </body></html>
