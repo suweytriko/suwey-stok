@@ -382,13 +382,13 @@ function viewShare(){
   if(!S.stock){v.innerHTML=`<button class="btn back" data-back>← Geri</button><div class="empty">Stok verileri yükleniyor…</div>`;return}
   const L=shareData();
   v.innerHTML=`<button class="btn back" data-back>← Geri</button>`+head("Güncel stok listesi",esc(reportDay()))+
-  `<div class="actions"><button class="btn primary" id="shImg">Görsel olarak paylaş</button><button class="btn" id="shTxt">Metin olarak paylaş</button></div>
+  `<div class="actions"><button class="btn primary" id="shPdf">PDF olarak paylaş</button><button class="btn" id="shTxt">Metin olarak paylaş</button></div>
   <p class="note" style="margin-top:0">Müşteriye yalnızca ürün, renk, satılabilir adet ve tam seri bilgisi gider. Tükenen renkler listede yer almaz.</p>
   <div class="shl">${L.map(x=>`<section class="shp"><h3>${esc(x.p)}</h3><div class="shc">${x.colors.map(c=>`<div class="shr">
     <span class="thumb">${c.img?`<img src="${c.img}" alt="${esc(x.p+" "+c.c)}" loading="lazy">`:`<span class="stripes"><i style="background:${swatch(c.c)}"></i></span>`}</span>
     <span class="cn"><span class="sw" style="background:${swatch(c.c)}"></span>${esc(c.c)}</span>
     <span class="q"><b>${fmt(c.k)}</b><small>adet · ${fmt(c.seri)} seri</small></span></div>`).join("")}</div></section>`).join("")||`<div class="empty">Şu an satılabilir ürün yok.</div>`}</div>`;
-  $("shImg").onclick=shareImage;$("shTxt").onclick=shareText;
+  $("shPdf").onclick=sharePdf;$("shTxt").onclick=shareText;
 }
 function shareTextBody(){
   return `SUWEY · Güncel stok (${reportDay()})\n\n`+shareData().map(x=>x.p+"\n"+x.colors.map(c=>`• ${c.c}: ${fmt(c.k)} adet · ${fmt(c.seri)} seri`).join("\n")).join("\n\n");
@@ -399,47 +399,106 @@ async function shareText(){
   try{await navigator.clipboard.writeText(text);toast("Liste kopyalandı, mesaja yapıştırabilirsiniz.")}catch(_){toast("Paylaşılamadı.")}
 }
 function loadImg(src){return new Promise(r=>{if(!src)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src})}
-async function stockCanvas(){
-  const L=shareData(),W=1080,P=48,G=16,CW=(W-2*P-G)/2,CH=176,TH=CH-24,TW=Math.round(TH*0.8),HD=74;
-  let h=P+150;for(const x of L)h+=HD+Math.ceil(x.colors.length/2)*(CH+G);h+=P+20;
-  const cv=document.createElement("canvas");cv.width=W;cv.height=h;const g=cv.getContext("2d");
-  try{await document.fonts.ready}catch(_){}
-  const imgs=await Promise.all(L.flatMap(x=>x.colors.map(c=>loadImg(c.img))));
-  const F=(w,sz,fam)=>`${w} ${sz}px ${fam}`,disp='"Bricolage Grotesque", system-ui, sans-serif',body='"Figtree", system-ui, sans-serif',mono='"JetBrains Mono", ui-monospace, monospace';
-  const rr=(x,y,w,hh,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+hh,r);g.arcTo(x+w,y+hh,x,y+hh,r);g.arcTo(x,y+hh,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
-  g.fillStyle="#F3F3F0";g.fillRect(0,0,W,h);
-  g.fillStyle="#1B1D21";g.font=F(700,52,disp);g.fillText("SUWEY",P,P+52);
-  g.font=F(500,30,body);g.fillStyle="#5F636B";g.fillText("Güncel stok · "+reportDay(),P,P+100);
-  g.fillStyle="#2C4A6E";g.fillRect(P,P+122,96,5);
-  let y=P+150,ii=0;
+// A4 pages drawn at 200 dpi, one product per block (never split across pages), 3 colour cards per row.
+const PG={W:1654,H:2339,M:110,COLS:3,GAP:28,CARD:268,TITLE:84,SEP:46,HEAD1:190,HEAD:96,FOOT:70};
+function layoutPages(L){
+  const rowsOf=x=>Math.ceil(x.colors.length/PG.COLS),blockH=x=>PG.TITLE+rowsOf(x)*PG.CARD+(rowsOf(x)-1)*PG.GAP;
+  const pages=[];let cur=[],y=0;
   for(const x of L){
-    g.fillStyle="#1B1D21";g.font=F(500,32,mono);g.fillText(x.p,P,y+48);y+=HD;
-    x.colors.forEach((c,i)=>{
-      const cx=P+(i%2)*(CW+G),cy=y+Math.floor(i/2)*(CH+G),im=imgs[ii++];
-      g.fillStyle="#FFFFFF";rr(cx,cy,CW,CH,18);g.fill();g.strokeStyle="#D9D9D2";g.lineWidth=2;g.stroke();
-      const tx=cx+12,ty=cy+12;g.save();rr(tx,ty,TW,TH,12);g.clip();
-      if(im){const s=Math.max(TW/im.width,TH/im.height),iw=im.width*s,ih=im.height*s;g.drawImage(im,tx+(TW-iw)/2,ty+(TH-ih)/2,iw,ih)}else{g.fillStyle=swatch(c.c);g.fillRect(tx,ty,TW,TH)}
-      g.restore();
-      const lx=tx+TW+20;
-      g.beginPath();g.arc(lx+11,cy+50,11,0,7);g.fillStyle=swatch(c.c);g.fill();g.strokeStyle="#B9B9B2";g.lineWidth=1.5;g.stroke();
-      g.fillStyle="#1B1D21";g.font=F(600,28,body);g.fillText(c.c,lx+32,cy+60);
-      g.font=F(700,46,disp);g.fillText(fmt(c.k),lx,cy+128);const aw=g.measureText(fmt(c.k)).width;
-      g.font=F(500,24,body);g.fillStyle="#5F636B";g.fillText("adet",lx+aw+10,cy+128);
-      g.fillText(fmt(c.seri)+" seri",lx,cy+160);
-    });
-    y+=Math.ceil(x.colors.length/2)*(CH+G);
+    const top=pages.length?PG.HEAD:PG.HEAD1,room=PG.H-PG.M-PG.FOOT-(PG.M+top),need=(cur.length?PG.SEP:0)+blockH(x);
+    if(cur.length&&y+need>room){pages.push(cur);cur=[];y=0}
+    cur.push(x);y+=(cur.length>1?PG.SEP:0)+blockH(x);
   }
+  if(cur.length)pages.push(cur);return pages;
+}
+async function drawPage(blocks,pi,pn,imgs){
+  const {W,H,M,COLS,GAP,CARD,TITLE,SEP}=PG,cv=document.createElement("canvas");cv.width=W;cv.height=H;
+  const g=cv.getContext("2d");g.imageSmoothingEnabled=true;g.imageSmoothingQuality="high";
+  const F=(w,sz,fam)=>`${w} ${sz}px ${fam}`,disp='"Bricolage Grotesque", system-ui, sans-serif',body='"Figtree", system-ui, sans-serif',mono='"JetBrains Mono", ui-monospace, monospace';
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  g.fillStyle="#FFFFFF";g.fillRect(0,0,W,H);
+  let y=M;
+  if(pi===0){
+    g.fillStyle="#1B1D21";g.font=F(700,76,disp);g.fillText("SUWEY",M,y+66);
+    g.font=F(500,38,body);g.fillStyle="#5F636B";g.fillText("Güncel stok listesi · "+reportDay(),M,y+124);
+    g.fillStyle="#2C4A6E";g.fillRect(M,y+150,120,6);y+=PG.HEAD1;
+  }else{
+    g.fillStyle="#1B1D21";g.font=F(700,40,disp);g.fillText("SUWEY",M,y+38);const bw=g.measureText("SUWEY").width;
+    g.font=F(500,30,body);g.fillStyle="#5F636B";g.fillText("Güncel stok listesi · "+reportDay(),M+bw+22,y+38);
+    g.fillStyle="#D9D9D2";g.fillRect(M,y+62,W-2*M,2);y+=PG.HEAD;
+  }
+  const cw=(W-2*M-(COLS-1)*GAP)/COLS,pad=18,ph=CARD-2*pad,pw=Math.round(ph*0.8);
+  blocks.forEach((x,bi)=>{
+    if(bi){g.fillStyle="#E4E4DE";g.fillRect(M,y+SEP/2-1,W-2*M,2);y+=SEP}
+    g.fillStyle="#1B1D21";g.font=F(500,46,mono);g.fillText(x.p,M,y+54);
+    const tot=x.colors.reduce((a,c)=>a+c.k,0);g.font=F(500,30,body);g.fillStyle="#5F636B";const tt=fmt(tot)+" adet";g.fillText(tt,W-M-g.measureText(tt).width,y+54);
+    y+=TITLE;
+    x.colors.forEach((c,i)=>{
+      const cx=M+(i%COLS)*(cw+GAP),cy=y+Math.floor(i/COLS)*(CARD+GAP),im=imgs.get(c.img);
+      g.fillStyle="#F6F6F3";rr(cx,cy,cw,CARD,22);g.fill();g.strokeStyle="#DCDCD5";g.lineWidth=2;g.stroke();
+      const tx=cx+pad,ty=cy+pad;g.save();rr(tx,ty,pw,ph,14);g.clip();
+      if(im){const s=Math.max(pw/im.width,ph/im.height),iw=im.width*s,ih=im.height*s;g.drawImage(im,tx+(pw-iw)/2,ty+(ph-ih)/2,iw,ih)}else{g.fillStyle=swatch(c.c);g.fillRect(tx,ty,pw,ph)}
+      g.restore();
+      const lx=tx+pw+24,mid=cy+CARD/2;
+      g.beginPath();g.arc(lx+13,mid-82,13,0,7);g.fillStyle=swatch(c.c);g.fill();g.strokeStyle="#B9B9B2";g.lineWidth=2;g.stroke();
+      g.fillStyle="#1B1D21";g.font=F(600,34,body);g.fillText(c.c,lx+36,mid-70);
+      g.font=F(700,78,disp);g.fillText(fmt(c.k),lx,mid+28);const aw=g.measureText(fmt(c.k)).width;
+      g.font=F(500,30,body);g.fillStyle="#5F636B";g.fillText("adet",lx+aw+10,mid+28);
+      g.fillStyle="#1B1D21";g.font=F(600,32,body);g.fillText(fmt(c.seri)+" seri",lx,mid+80);
+    });
+    const r=Math.ceil(x.colors.length/COLS);y+=r*CARD+(r-1)*GAP;
+  });
+  g.font=F(500,26,body);g.fillStyle="#8A8E95";
+  g.fillText("Adetler satılabilir stoktur. Seri: her bedenden birer adet.",M,H-M+10);
+  const pg=`${pi+1} / ${pn}`;g.fillText(pg,W-M-g.measureText(pg).width,H-M+10);
   return cv;
 }
-async function shareImage(){
-  const b=$("shImg");b.disabled=true;const old=b.textContent;b.textContent="Hazırlanıyor…";
+// Minimal PDF writer: one full-page JPEG per A4 page (DCTDecode, no dependencies).
+function buildPdf(pages){
+  const enc=new TextEncoder(),parts=[],offs=[];let len=0;
+  const put=x=>{const b=typeof x==="string"?enc.encode(x):x;parts.push(b);len+=b.length};
+  const obj=(n,body)=>{offs[n]=len;put(`${n} 0 obj\n`);for(const b of body)put(b);put("\nendobj\n")};
+  const n=pages.length,A4W=595.28,A4H=841.89;
+  put("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  obj(1,["<< /Type /Catalog /Pages 2 0 R >>"]);
+  obj(2,[`<< /Type /Pages /Count ${n} /Kids [${pages.map((_,i)=>`${3+i*3} 0 R`).join(" ")}] >>`]);
+  pages.forEach((p,i)=>{
+    const po=3+i*3,co=po+1,io=po+2,cs=`q ${A4W} 0 0 ${A4H} 0 0 cm /Im0 Do Q`;
+    obj(po,[`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A4W} ${A4H}] /Resources << /XObject << /Im0 ${io} 0 R >> >> /Contents ${co} 0 R >>`]);
+    obj(co,[`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`]);
+    obj(io,[`<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`,p.jpg,"\nendstream"]);
+  });
+  const total=3+n*3,xref=len;
+  put(`xref\n0 ${total}\n0000000000 65535 f \n`+Array.from({length:total-1},(_,i)=>String(offs[i+1]).padStart(10,"0")+" 00000 n \n").join(""));
+  put(`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts,{type:"application/pdf"});
+}
+function fitLayout(L){
+  PG.CARD=240;const minPages=layoutPages(L).length,target=Math.max(3,minPages);
+  for(let c=440;c>=240;c-=10){PG.CARD=c;const p=layoutPages(L);if(p.length<=target)return p}
+  PG.CARD=240;return layoutPages(L);
+}
+async function stockPdf(){
+  const L=shareData(),pages=fitLayout(L);
+  try{await document.fonts.ready}catch(_){}
+  const srcs=[...new Set(L.flatMap(x=>x.colors.map(c=>c.img)).filter(Boolean))],imgs=new Map();
+  await Promise.all(srcs.map(async s=>imgs.set(s,await loadImg(s))));
+  const out=[];
+  for(let i=0;i<pages.length;i++){
+    const cv=await drawPage(pages[i],i,pages.length,imgs);
+    const b=await new Promise(r=>cv.toBlob(r,"image/jpeg",0.9));
+    out.push({w:cv.width,h:cv.height,jpg:new Uint8Array(await b.arrayBuffer())});
+  }
+  return {blob:buildPdf(out),pages:pages.length};
+}
+async function sharePdf(){
+  const b=$("shPdf");b.disabled=true;const old=b.textContent;b.textContent="PDF hazırlanıyor…";
   try{
-    const cv=await stockCanvas();
-    const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",0.9));
-    const name="SUWEY-stok-"+(S.stock.reportDate||"guncel")+".jpg",file=new File([blob],name,{type:"image/jpeg"});
+    const {blob}=await stockPdf();
+    const name="SUWEY-stok-"+(S.stock.reportDate||"guncel")+".pdf",file=new File([blob],name,{type:"application/pdf"});
     if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:"SUWEY güncel stok"})}catch(e){if(e.name!=="AbortError")throw e}}
-    else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast("Görsel indirildi.")}
-  }catch(_){toast("Görsel hazırlanamadı.")}
+    else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast("PDF indirildi.")}
+  }catch(_){toast("PDF hazırlanamadı.")}
   finally{b.disabled=false;b.textContent=old}
 }
 
