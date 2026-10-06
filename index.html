@@ -170,6 +170,18 @@ button.lrow:hover{border-color:var(--muted)}
 .pf .tot div{display:flex;justify-content:space-between;padding:3px 0}
 .pf .tot .g{font-weight:700;border-top:1px solid #1B1D21;margin-top:4px;padding-top:6px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+/* share list */
+.sharebtn{margin-left:auto}
+.shl{display:flex;flex-direction:column;gap:18px}
+.shp h3{font-family:var(--f-mono);font-weight:500;font-size:17px;margin:0 0 8px}
+.shc{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.shr{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px;display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center}
+.shr .thumb{width:64px;height:80px;border-radius:8px}
+.shr .cn{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15.5px}
+.shr .q{text-align:right;font-variant-numeric:tabular-nums}
+.shr .q b{font-family:var(--f-display);font-size:22px;font-weight:700;display:block;line-height:1.1}
+.shr .q small{font-size:12.5px;color:var(--muted)}
+@media (max-width:640px){.sharebtn{margin-left:0}}
 @media print{
   header.top,.tabbar,.actions,.back,.noprint{display:none!important}
   body{background:#fff;padding:0}.pf{border:0;padding:0}
@@ -313,7 +325,7 @@ function viewStock(){
     if(S.filter==="out"&&!x.colors.some(c=>c.status==="TÜKENDİ"))return false;
     if(q&&!(x.p.includes(q)||x.t.includes(q)||x.colors.some(c=>c.c.includes(q))))return false;
     return true;});
-  v.innerHTML=`<div class="summary">${f.map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${S.filter===k}">${l} <b>${cnt[k]}</b></button>`).join("")}<div class="totals">Satılabilir toplam <strong>${fmt(tot)}</strong> adet</div></div>
+  v.innerHTML=`<div class="summary">${f.map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${S.filter===k}">${l} <b>${cnt[k]}</b></button>`).join("")}<div class="totals">Satılabilir toplam <strong>${fmt(tot)}</strong> adet</div><button class="btn primary sharebtn" data-go="paylas"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>Müşteriyle paylaş</button></div>
   <div class="grid">${vis.length?vis.map(x=>`<button class="card" data-go="u-${esc(x.p)}">
     <span class="ph">${photoBox(x.p,undefined,x.colors.map(c=>c.c),x.p)}</span>
     <span class="body">
@@ -357,6 +369,78 @@ function viewProduct(code){
       </tbody></table></div>
       ${whoBlock(x.p,c.c)}
     </div></article>`).join("")}</div>`;
+}
+
+/* ---------- MÜŞTERİYLE PAYLAŞ ---------- */
+// Only what a customer should see: product, colour photo, available pieces and full series. Sold-out colours are left out.
+function shareData(){
+  return products().map(x=>({p:x.p,colors:x.colors.filter(c=>c.k>0).map(c=>({c:c.c,k:c.k,seri:c.seri,img:purl(x.p,c.c)}))})).filter(x=>x.colors.length);
+}
+const reportDay=()=>S.stock&&S.stock.reportDate?new Date(S.stock.reportDate+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}):"";
+function viewShare(){
+  const v=$("view");
+  if(!S.stock){v.innerHTML=`<button class="btn back" data-back>← Geri</button><div class="empty">Stok verileri yükleniyor…</div>`;return}
+  const L=shareData();
+  v.innerHTML=`<button class="btn back" data-back>← Geri</button>`+head("Güncel stok listesi",esc(reportDay()))+
+  `<div class="actions"><button class="btn primary" id="shImg">Görsel olarak paylaş</button><button class="btn" id="shTxt">Metin olarak paylaş</button></div>
+  <p class="note" style="margin-top:0">Müşteriye yalnızca ürün, renk, satılabilir adet ve tam seri bilgisi gider. Tükenen renkler listede yer almaz.</p>
+  <div class="shl">${L.map(x=>`<section class="shp"><h3>${esc(x.p)}</h3><div class="shc">${x.colors.map(c=>`<div class="shr">
+    <span class="thumb">${c.img?`<img src="${c.img}" alt="${esc(x.p+" "+c.c)}" loading="lazy">`:`<span class="stripes"><i style="background:${swatch(c.c)}"></i></span>`}</span>
+    <span class="cn"><span class="sw" style="background:${swatch(c.c)}"></span>${esc(c.c)}</span>
+    <span class="q"><b>${fmt(c.k)}</b><small>adet · ${fmt(c.seri)} seri</small></span></div>`).join("")}</div></section>`).join("")||`<div class="empty">Şu an satılabilir ürün yok.</div>`}</div>`;
+  $("shImg").onclick=shareImage;$("shTxt").onclick=shareText;
+}
+function shareTextBody(){
+  return `SUWEY · Güncel stok (${reportDay()})\n\n`+shareData().map(x=>x.p+"\n"+x.colors.map(c=>`• ${c.c}: ${fmt(c.k)} adet · ${fmt(c.seri)} seri`).join("\n")).join("\n\n");
+}
+async function shareText(){
+  const text=shareTextBody();
+  try{if(navigator.share){await navigator.share({text});return}}catch(e){if(e&&e.name==="AbortError")return}
+  try{await navigator.clipboard.writeText(text);toast("Liste kopyalandı, mesaja yapıştırabilirsiniz.")}catch(_){toast("Paylaşılamadı.")}
+}
+function loadImg(src){return new Promise(r=>{if(!src)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src})}
+async function stockCanvas(){
+  const L=shareData(),W=1080,P=48,G=16,CW=(W-2*P-G)/2,CH=176,TH=CH-24,TW=Math.round(TH*0.8),HD=74;
+  let h=P+150;for(const x of L)h+=HD+Math.ceil(x.colors.length/2)*(CH+G);h+=P+20;
+  const cv=document.createElement("canvas");cv.width=W;cv.height=h;const g=cv.getContext("2d");
+  try{await document.fonts.ready}catch(_){}
+  const imgs=await Promise.all(L.flatMap(x=>x.colors.map(c=>loadImg(c.img))));
+  const F=(w,sz,fam)=>`${w} ${sz}px ${fam}`,disp='"Bricolage Grotesque", system-ui, sans-serif',body='"Figtree", system-ui, sans-serif',mono='"JetBrains Mono", ui-monospace, monospace';
+  const rr=(x,y,w,hh,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+hh,r);g.arcTo(x+w,y+hh,x,y+hh,r);g.arcTo(x,y+hh,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  g.fillStyle="#F3F3F0";g.fillRect(0,0,W,h);
+  g.fillStyle="#1B1D21";g.font=F(700,52,disp);g.fillText("SUWEY",P,P+52);
+  g.font=F(500,30,body);g.fillStyle="#5F636B";g.fillText("Güncel stok · "+reportDay(),P,P+100);
+  g.fillStyle="#2C4A6E";g.fillRect(P,P+122,96,5);
+  let y=P+150,ii=0;
+  for(const x of L){
+    g.fillStyle="#1B1D21";g.font=F(500,32,mono);g.fillText(x.p,P,y+48);y+=HD;
+    x.colors.forEach((c,i)=>{
+      const cx=P+(i%2)*(CW+G),cy=y+Math.floor(i/2)*(CH+G),im=imgs[ii++];
+      g.fillStyle="#FFFFFF";rr(cx,cy,CW,CH,18);g.fill();g.strokeStyle="#D9D9D2";g.lineWidth=2;g.stroke();
+      const tx=cx+12,ty=cy+12;g.save();rr(tx,ty,TW,TH,12);g.clip();
+      if(im){const s=Math.max(TW/im.width,TH/im.height),iw=im.width*s,ih=im.height*s;g.drawImage(im,tx+(TW-iw)/2,ty+(TH-ih)/2,iw,ih)}else{g.fillStyle=swatch(c.c);g.fillRect(tx,ty,TW,TH)}
+      g.restore();
+      const lx=tx+TW+20;
+      g.beginPath();g.arc(lx+11,cy+50,11,0,7);g.fillStyle=swatch(c.c);g.fill();g.strokeStyle="#B9B9B2";g.lineWidth=1.5;g.stroke();
+      g.fillStyle="#1B1D21";g.font=F(600,28,body);g.fillText(c.c,lx+32,cy+60);
+      g.font=F(700,46,disp);g.fillText(fmt(c.k),lx,cy+128);const aw=g.measureText(fmt(c.k)).width;
+      g.font=F(500,24,body);g.fillStyle="#5F636B";g.fillText("adet",lx+aw+10,cy+128);
+      g.fillText(fmt(c.seri)+" seri",lx,cy+160);
+    });
+    y+=Math.ceil(x.colors.length/2)*(CH+G);
+  }
+  return cv;
+}
+async function shareImage(){
+  const b=$("shImg");b.disabled=true;const old=b.textContent;b.textContent="Hazırlanıyor…";
+  try{
+    const cv=await stockCanvas();
+    const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",0.9));
+    const name="SUWEY-stok-"+(S.stock.reportDate||"guncel")+".jpg",file=new File([blob],name,{type:"image/jpeg"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:"SUWEY güncel stok"})}catch(e){if(e.name!=="AbortError")throw e}}
+    else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast("Görsel indirildi.")}
+  }catch(_){toast("Görsel hazırlanamadı.")}
+  finally{b.disabled=false;b.textContent=old}
 }
 
 /* ---------- MÜŞTERİLER ---------- */
@@ -492,6 +576,7 @@ function route(){
   if(h.startsWith("u-")){tab="stok";viewProduct(h.slice(2))}
   else if(h.startsWith("m-")){tab="musteri";viewCustomer(+h.slice(2))}
   else if(h.startsWith("pf-")){tab="musteri";const[a,b]=h.slice(3).split("-");viewProforma(+a,+b)}
+  else if(h==="paylas"){tab="stok";viewShare()}
   else if(h==="musteri"){tab="musteri";viewCustomers()}
   else if(h==="sevk"){tab="sevk";viewSevk()}
   else if(h==="tahsilat"){tab="tahsilat";viewTahsilat()}
@@ -499,7 +584,7 @@ function route(){
   else viewStock();
   if(tab!==S.tab){S.tab=tab;S.q="";$("q").value=""}
   $("q").placeholder=PH[tab];
-  $("searchBox").hidden=/^(u|m|pf)-/.test(h);
+  $("searchBox").hidden=/^(u|m|pf)-/.test(h)||h==="paylas";
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab?"page":"false"));
   const pf=$("pinForm");if(pf)pf.onsubmit=e=>{e.preventDefault();submitPin()};const pb=$("pinBtn");if(pb)pb.onclick=submitPin;
   const lb=$("lockBtn");if(lb)lb.onclick=()=>{S.crm=null;ls("suwey-pin",null);route()};
